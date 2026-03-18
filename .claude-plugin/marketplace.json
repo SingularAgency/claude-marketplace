@@ -1,0 +1,29 @@
+{
+  "name": "singular-agency-marketplace",
+  "owner": {
+    "name": "Singular Agency",
+    "email": "as@singularagency.co"
+  },
+  "metadata": {
+    "description": "Official Claude Code plugin marketplace for Singular Agency — productivity tools, AI utilities, and workflow automation for our team.",
+    "version": "1.0.0",
+    "pluginRoot": "./plugins"
+  },
+  "plugins": [
+    {
+      "name": "smart-summarizer-plugin",
+      "source": "./plugins/smart-summarizer-plugin",
+      "description": "Adds /summarize and /briefing skills plus an AI summarizer agent for quickly distilling long documents, threads, and code files.",
+      "version": "1.0.0",
+      "author": {
+        "name": "Singular Agency",
+        "email": "as@singularagency.co"
+      },
+      "homepage": "https://github.com/SingularAgency/claude-marketplace",
+      "repository": "https://github.com/SingularAgency/claude-marketplace",
+      "license": "MIT",
+      "keywords": ["summarize", "productivity", "ai", "documents"],
+      "category": "productivity"
+    }
+  ]
+}
