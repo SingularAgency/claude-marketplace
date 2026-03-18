@@ -5,7 +5,7 @@
     "email": "as@singularagency.co"
   },
   "metadata": {
-    "description": "Official Claude Code plugin marketplace for Singular Agency — productivity tools, AI utilities, and workflow automation for our team.",
+    "description": "Official Claude Code plugin marketplace for Singular Agency \u2014 productivity tools, AI utilities, and workflow automation for our team.",
     "version": "1.0.0",
     "pluginRoot": "./plugins"
   },
@@ -22,8 +22,32 @@
       "homepage": "https://github.com/SingularAgency/claude-marketplace",
       "repository": "https://github.com/SingularAgency/claude-marketplace",
       "license": "MIT",
-      "keywords": ["summarize", "productivity", "ai", "documents"],
+      "keywords": [
+        "summarize",
+        "productivity",
+        "ai",
+        "documents"
+      ],
       "category": "productivity"
+    },
+    {
+      "name": "plugin-creator",
+      "source": "./plugins/plugin-creator",
+      "description": "Guides team members through creating a new plugin and submitting it as a PR to the marketplace \u2014 automatically.",
+      "version": "0.1.0",
+      "author": {
+        "name": "Singular Agency",
+        "email": "as@singularagency.co"
+      },
+      "repository": "https://github.com/SingularAgency/claude-marketplace",
+      "license": "MIT",
+      "keywords": [
+        "plugin",
+        "scaffold",
+        "contribution",
+        "marketplace"
+      ],
+      "category": "developer-tools"
     }
   ]
 }

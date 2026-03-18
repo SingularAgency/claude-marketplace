@@ -1,0 +1,12 @@
+{
+  "name": "plugin-creator",
+  "version": "0.1.0",
+  "description": "Guides Singular Agency team members through creating a new plugin and automatically submits it as a PR to the SingularAgency/claude-marketplace repository.",
+  "author": {
+    "name": "Singular Agency",
+    "email": "as@singularagency.co"
+  },
+  "repository": "https://github.com/SingularAgency/claude-marketplace",
+  "license": "MIT",
+  "keywords": ["plugin", "scaffold", "marketplace", "contribution"]
+}
