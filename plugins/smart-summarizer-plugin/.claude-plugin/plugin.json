@@ -1,0 +1,10 @@
+{
+  "name": "smart-summarizer-plugin",
+  "description": "Adds /summarize and /briefing skills plus an AI summarizer agent for quickly distilling long documents, threads, and code files.",
+  "version": "1.0.0",
+  "author": {
+    "name": "Singular Agency",
+    "email": "as@singularagency.co"
+  },
+  "license": "MIT"
+}
