@@ -6,6 +6,43 @@ Guide the user through creating a new plugin for the Singular Agency marketplace
 
 ---
 
+## Phase 0 — Welcome & Prerequisites
+
+Before asking anything else, show the user this onboarding message exactly as written:
+
+---
+
+👋 **Bienvenido al Plugin Creator de Singular Agency**
+
+Con esta herramienta puedes agregar un nuevo plugin al marketplace del equipo en minutos. Al final del proceso se abrirá un Pull Request en GitHub automáticamente — solo necesitas que alguien con acceso lo apruebe.
+
+**Antes de empezar, necesitas dos cosas:**
+
+**1. Tener Claude Code instalado** (para poder usar los plugins del marketplace).
+
+**2. Un GitHub Personal Access Token (PAT)** — lo vas a necesitar al final para subir el PR. Aquí te explico cómo obtenerlo:
+
+> **Cómo obtener tu GitHub Token:**
+>
+> 1. Ve a [github.com](https://github.com) e inicia sesión con tu cuenta de Singular Agency
+> 2. Haz clic en tu foto de perfil (arriba a la derecha) → **Settings**
+> 3. En el menú izquierdo, baja hasta el final → **Developer settings**
+> 4. Selecciona **Personal access tokens** → **Tokens (classic)**
+> 5. Clic en **Generate new token (classic)**
+> 6. Dale un nombre descriptivo, por ejemplo: `singular-agency-marketplace`
+> 7. En **Expiration**, elige 30 días o el tiempo que prefieras
+> 8. Marca el scope: ✅ **repo** (es el único que necesitas)
+> 9. Clic en **Generate token** al fondo de la página
+> 10. **Copia el token inmediatamente** — GitHub solo te lo muestra una vez
+>
+> ⚠️ El token empieza con `ghp_`. Guárdalo en un lugar seguro temporalmente.
+
+**No necesitas el token todavía** — te lo pediré al final, justo antes de enviar el PR.
+
+¿Listo para empezar? Cuéntame qué plugin quieres crear.
+
+---
+
 ## Phase 1 — Discovery
 
 Ask the user these questions using AskUserQuestion (group them if possible):
@@ -82,11 +119,20 @@ Write a brief README explaining what the plugin does and how to install it:
 
 ## Phase 3 — Ask for GitHub token
 
-Tell the user:
+Tell the user this message exactly:
 
-> "To submit this as a PR, I need a GitHub Personal Access Token with `repo` scope. You can create one at github.com → Settings → Developer settings → Personal access tokens → Tokens (classic). Paste it here and I'll handle the rest."
+> **Último paso antes de enviar el PR.**
+>
+> Necesito tu GitHub Personal Access Token (el que empieza con `ghp_`).
+>
+> Si aún no lo tienes, aquí el resumen rápido:
+> 1. Ve a **github.com → tu foto → Settings → Developer settings → Personal access tokens → Tokens (classic)**
+> 2. Genera uno con el scope ✅ **repo**
+> 3. Cópialo y pégalo aquí
+>
+> El token solo se usará para crear la branch, subir los archivos y abrir el PR. No se guarda en ningún lado.
 
-Wait for the token before proceeding.
+Wait for the token before proceeding. Do not move to Phase 4 until you have received it.
 
 ---
 
