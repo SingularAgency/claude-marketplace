@@ -1,0 +1,12 @@
+{
+  "name": "email-weekly-recap",
+  "version": "0.1.0",
+  "description": "Fetches your Gmail inbox from the past 7 days, filters out automated and notification emails, and delivers a clean digest of real human conversations.",
+  "author": {
+    "name": "Singular Agency",
+    "email": "as@singularagency.co"
+  },
+  "repository": "https://github.com/SingularAgency/claude-marketplace",
+  "license": "MIT",
+  "keywords": ["email", "gmail", "digest", "inbox", "summary", "productivity"]
+}
