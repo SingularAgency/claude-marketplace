@@ -18,25 +18,30 @@ Follow this sequence when a user wants to add a new client.
    → For each channel name: resolve ID using Slack MCP → `slack_channels` with `scope = 'client'`
    → Ask priority: "¿Alguno de estos canales es más importante que los otros, o todos igual?"
 
-5. **"¿Hay algún canal global del equipo que todavía no hayas configurado?"** (only ask if `slack_channels` with `scope IN ('global','team')` returns 0 rows for this PO)
+5. **"¿Este cliente tiene OKRs cargados en Airtable?"** — "Si es así, ¿cómo aparece exactamente el nombre del cliente en Airtable? (Ej: 'VITL', 'Krish Ranga'). Lo necesito para vincular sus objetivos al briefing."
+   → `airtable_client_name` (nullable — si no hay OKRs en Airtable, dejar en blanco)
+
+6. **"¿Hay algún canal global del equipo que todavía no hayas configurado?"** (only ask if `slack_channels` with `scope IN ('global','team')` returns 0 rows for this PO)
    → If yes: add them with `scope = 'global'` or `scope = 'team'`
 
 ## SQL to run after collecting all data
 
 ```sql
 -- 1. Insert the client
-INSERT INTO clients (po_id, client_id, display_name, email_domains, calendar_keywords)
+INSERT INTO clients (po_id, client_id, display_name, email_domains, calendar_keywords, airtable_client_name)
 VALUES (
   '[po_id]',
   '[client_id]',
   '[display_name]',
   ARRAY[/* domains */],
-  ARRAY[/* keywords */]
+  ARRAY[/* keywords */],
+  '[airtable_client_name_or_null]'
 )
 ON CONFLICT (po_id, client_id) DO UPDATE SET
-  display_name      = EXCLUDED.display_name,
-  email_domains     = EXCLUDED.email_domains,
-  calendar_keywords = EXCLUDED.calendar_keywords;
+  display_name         = EXCLUDED.display_name,
+  email_domains        = EXCLUDED.email_domains,
+  calendar_keywords    = EXCLUDED.calendar_keywords,
+  airtable_client_name = EXCLUDED.airtable_client_name;
 
 -- 2. Insert client Slack channels
 INSERT INTO slack_channels (po_id, channel_id, channel_name, client_id, scope, priority)
