@@ -1,0 +1,9 @@
+{
+  "name": "po-meeting-assistant",
+  "version": "0.1.0",
+  "description": "Autonomous meeting assistant for Product Owners. Syncs context from Slack, Gmail, and Read.ai into a shared memory, then delivers a strategic briefing 10 minutes before each client meeting.",
+  "author": {
+    "name": "Singular Agency"
+  },
+  "keywords": ["meeting", "briefing", "product-owner", "slack", "gmail", "read.ai", "supabase"]
+}
