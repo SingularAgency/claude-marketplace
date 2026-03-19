@@ -136,6 +136,7 @@ WHERE po_id = '[po_id]';
 
 ```sql
 SELECT c.client_id, c.display_name, c.email_domains, c.calendar_keywords,
+       c.airtable_client_name,
        p.notification_slack_user_id, p.time_window_days
 FROM clients c
 JOIN po_preferences p ON c.po_id = p.po_id
@@ -144,7 +145,60 @@ WHERE c.po_id = '[po_id]' AND c.client_id = '[client_id]';
 
 Compute `since_date = now() - INTERVAL '[time_window_days] days'`
 
-### Step 2: Load channel list
+### Step 2: Fetch OKRs from Airtable (if configured)
+
+If `airtable_client_name` is not null, query Airtable to get active OKRs for this client.
+
+**Airtable base ID:** `apppIyKGvywJfCiXi`
+
+**2a. Fetch active Objectives** from table `tblGDUCRP1IkYojoR`:
+```
+list_records_for_table(
+  baseId: "apppIyKGvywJfCiXi",
+  tableId: "tblGDUCRP1IkYojoR",
+  fieldIds: [
+    "fldygfQVc9Q94iRfW",  -- Objective (richText)
+    "fldCfpuLns2LADJMG",  -- Quarter (formula)
+    "fldoowjollzgzyM7G",  -- Status (singleSelect)
+    "fldYISdTT5ORvA45d",  -- Avg Key Results Completion (rollup)
+    "fldxMhRheKT3DOfWi",  -- Priority
+    "fld2jR7yfPme1z3cY"   -- Client Name (lookup) ← filter by this
+  ],
+  filters: {
+    operator: "and",
+    operands: [
+      { operator: "contains", operands: ["fld2jR7yfPme1z3cY", "[airtable_client_name]"] }
+    ]
+  }
+)
+```
+
+**2b. Fetch active Key Results** from table `tblWLclvDf3zfoqst`:
+```
+list_records_for_table(
+  baseId: "apppIyKGvywJfCiXi",
+  tableId: "tblWLclvDf3zfoqst",
+  fieldIds: [
+    "fldfypj1CEFM8Fnz7",  -- Key Result (richText)
+    "fldIBwlSewbkmKcY2",  -- Objective TXT (lookup)
+    "fldANOaH2qO60PyCn",  -- Current Value (percent)
+    "fldDagC9sdXC4BKRq",  -- Target Value (percent)
+    "fldVF4Rji04osFIT6",  -- Status (singleSelect)
+    "fldAQbqHl6YE81BXt",  -- Quarter (formula)
+    "fldUccalG1SLdk1ou"   -- Client Name (lookup) ← filter by this
+  ],
+  filters: {
+    operator: "and",
+    operands: [
+      { operator: "contains", operands: ["fldUccalG1SLdk1ou", "[airtable_client_name]"] }
+    ]
+  }
+)
+```
+
+Group Key Results by their parent Objective for use in synthesis. If `airtable_client_name` is null or Airtable returns no records, skip silently — don't mention OKRs in the briefing.
+
+### Step 3: Load channel list
 
 ```sql
 SELECT channel_id, channel_name, scope, priority
@@ -154,7 +208,7 @@ WHERE po_id = '[po_id]'
 ORDER BY priority ASC;
 ```
 
-### Step 3: Fetch data from all sources in parallel
+### Step 4: Fetch data from all sources in parallel
 
 Execute all three fetches. Each is bounded by `time_window_days`.
 
@@ -185,20 +239,22 @@ Transcript correlation logic (apply in order, stop at first match):
 
 For internal meetings (no client participants, title doesn't match): skip — they don't belong to this client's briefing context. They'll be relevant if the PO runs a briefing for whatever client the meeting was about.
 
-### Step 4: Synthesize
+### Step 5: Synthesize
 
-Feed all fetched content to the synthesis prompt. See `references/briefing-format.md` for exact instructions and output template.
+Feed all fetched content (Slack, Gmail, transcripts, OKRs from Airtable) to the synthesis prompt. See `references/briefing-format.md` for exact instructions and output template.
 
 Synthesis questions:
-1. ¿Qué está pendiente o sin resolver de este cliente?
-2. ¿Hubo algún problema, bloqueo o cancelación reciente?
-3. ¿Qué pidió el cliente por email en la última semana?
-4. ¿Qué discutió el equipo en los canales de Slack?
-5. ¿Hay algo en los canales globales (alertas, incidentes) que pueda afectar esta reunión?
+1. ¿Cuáles son los OKRs activos de este cliente y cómo va su progreso? ¿Alguno en riesgo?
+2. ¿Qué está pendiente o sin resolver de este cliente?
+3. ¿Hubo algún problema, bloqueo o cancelación reciente?
+4. ¿Qué pidió el cliente por email en la última semana?
+5. ¿Qué discutió el equipo en los canales de Slack?
+6. ¿Hay algo en los canales globales (alertas, incidentes) que pueda afectar esta reunión?
+7. ¿Hay conversaciones de Slack o emails que se relacionen directamente con algún OKR activo? (cruzar fuentes)
 
 If a source returned no data, omit that section silently — don't say "no encontré nada en Slack".
 
-### Step 5: Deliver
+### Step 6: Deliver
 
 **Manual request** → respond in chat with formatted briefing.
 
