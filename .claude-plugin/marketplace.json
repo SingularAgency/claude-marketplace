@@ -33,8 +33,8 @@
     {
       "name": "plugin-creator",
       "source": "./plugins/plugin-creator",
-      "description": "Guides team members through creating a new plugin and submitting it as a PR to the marketplace — automatically.",
-      "version": "0.1.0",
+      "description": "Guides team members through creating a new plugin and submitting it as a PR to the marketplace — automatically. Auto-detects GitHub MCP and guides installation if needed.",
+      "version": "0.2.0",
       "author": {
         "name": "Singular Agency",
         "email": "as@singularagency.co"
