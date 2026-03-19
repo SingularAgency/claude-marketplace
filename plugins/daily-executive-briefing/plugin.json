@@ -1,0 +1,11 @@
+{
+  "name": "daily-executive-briefing",
+  "version": "1.0.0",
+  "description": "Generates a daily executive briefing for a Project Manager or Chief of Staff by pulling live data from Google Calendar, Gmail, Slack, and Airtable.",
+  "skills": [
+    {
+      "name": "daily-executive-briefing",
+      "path": "skills/daily-executive-briefing"
+    }
+  ]
+}
