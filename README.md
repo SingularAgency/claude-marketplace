@@ -28,6 +28,42 @@ Adds three capabilities to Claude Code:
 
 ---
 
+### `meeting-message-drafter`
+> Productivity · v1.0.0
+
+Fetches meeting transcripts from Airtable and drafts any message, follow-up, or summary — for clients or the internal team — based on what was actually discussed.
+
+| Capability | Type | What it does |
+|---|---|---|
+| `meeting-message-drafter` | Skill | Reads a meeting transcript from Airtable and drafts a message for any recipient based on the user's intent |
+
+**Requirements:** Airtable MCP connector must be enabled.
+
+**Install:**
+```shell
+/plugin install meeting-message-drafter@singular-agency-marketplace
+```
+
+---
+
+### `daily-executive-briefing`
+> Productivity · v1.0.0
+
+Pulls live data from Google Calendar, Gmail, Slack, and Airtable, analyzes it through a senior PM lens, and delivers a prioritized, action-oriented daily briefing — with draft responses included.
+
+| Capability | Type | What it does |
+|---|---|---|
+| `daily-executive-briefing` | Skill | Aggregates signals from Calendar, Gmail, Slack, and Airtable to generate a structured executive briefing with urgent items, high-value actions, follow-ups, and strategic alerts |
+
+**Requirements:** Google Calendar, Gmail, Slack, and Airtable MCP connectors must be enabled.
+
+**Install:**
+```shell
+/plugin install daily-executive-briefing@singular-agency-marketplace
+```
+
+---
+
 ## Auto-enable for the team
 
 Add this to your project's `.claude/settings.json` to automatically register the marketplace and enable plugins for all team members:
@@ -43,7 +79,9 @@ Add this to your project's `.claude/settings.json` to automatically register the
     }
   },
   "enabledPlugins": {
-    "smart-summarizer-plugin@singular-agency-marketplace": true
+    "smart-summarizer-plugin@singular-agency-marketplace": true,
+    "meeting-message-drafter@singular-agency-marketplace": true,
+    "daily-executive-briefing@singular-agency-marketplace": true
   }
 }
 ```
