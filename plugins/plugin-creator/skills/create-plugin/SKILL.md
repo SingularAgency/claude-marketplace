@@ -6,9 +6,9 @@ Guide the user through creating a new plugin for the Singular Agency marketplace
 
 ---
 
-## Phase 0 — Welcome & Prerequisites
+## Phase 0 — Welcome & Token
 
-Before asking anything else, show the user this onboarding message exactly as written:
+Show this message exactly:
 
 ---
 
@@ -16,28 +16,15 @@ Before asking anything else, show the user this onboarding message exactly as wr
 
 Con esta herramienta puedes agregar un nuevo plugin al marketplace del equipo en minutos. Al final del proceso se abrirá un Pull Request en GitHub automáticamente — solo necesitas que alguien con acceso lo apruebe.
 
-**Antes de empezar, necesitas dos cosas:**
+Para enviar el PR necesitaré tu GitHub Personal Access Token. Si aún no lo tienes, aquí te explico cómo crearlo:
 
-**1. Tener Claude Code instalado** (para poder usar los plugins del marketplace).
+1. Ve a [github.com/settings/tokens](https://github.com/settings/tokens) e inicia sesión con tu cuenta de Singular Agency
+2. Clic en **"Generate new token (classic)"**
+3. Nombre: `singular-agency-marketplace` · Expiración: 90 días
+4. Marca solo el scope: ✅ **repo**
+5. Clic en **Generate token** — copia el token inmediatamente (empieza con `ghp_`)
 
-**2. Un GitHub Personal Access Token (PAT)** — lo vas a necesitar al final para subir el PR. Aquí te explico cómo obtenerlo:
-
-> **Cómo obtener tu GitHub Token:**
->
-> 1. Ve a [github.com](https://github.com) e inicia sesión con tu cuenta de Singular Agency
-> 2. Haz clic en tu foto de perfil (arriba a la derecha) → **Settings**
-> 3. En el menú izquierdo, baja hasta el final → **Developer settings**
-> 4. Selecciona **Personal access tokens** → **Tokens (classic)**
-> 5. Clic en **Generate new token (classic)**
-> 6. Dale un nombre descriptivo, por ejemplo: `singular-agency-marketplace`
-> 7. En **Expiration**, elige 30 días o el tiempo que prefieras
-> 8. Marca el scope: ✅ **repo** (es el único que necesitas)
-> 9. Clic en **Generate token** al fondo de la página
-> 10. **Copia el token inmediatamente** — GitHub solo te lo muestra una vez
->
-> ⚠️ El token empieza con `ghp_`. Guárdalo en un lugar seguro temporalmente.
-
-**No necesitas el token todavía** — te lo pediré al final, justo antes de enviar el PR.
+**No lo necesitas todavía** — te lo pediré al final, justo antes de enviar el PR.
 
 ¿Listo para empezar? Cuéntame qué plugin quieres crear.
 
@@ -87,7 +74,7 @@ Create the plugin directory at `/tmp/<plugin-name>/` with this structure:
 
 ### SKILL.md
 
-Write the SKILL.md for the main skill based on what the user described. Follow these rules:
+Write the SKILL.md for the main skill based on what the user described:
 - Frontmatter `description` must be third-person and include specific trigger phrases
 - The body is instructions FOR Claude — write as directives, not documentation
 - Keep it focused and under 2,000 words
@@ -96,8 +83,6 @@ Write the SKILL.md for the main skill based on what the user described. Follow t
 Refer to `references/plugin-template.md` for a complete worked example.
 
 ### README.md
-
-Write a brief README explaining what the plugin does and how to install it:
 
 ```markdown
 # <Plugin Name>
@@ -119,115 +104,178 @@ Write a brief README explaining what the plugin does and how to install it:
 
 ## Phase 3 — Ask for GitHub token
 
-Tell the user this message exactly:
+Tell the user:
 
 > **Último paso antes de enviar el PR.**
 >
 > Necesito tu GitHub Personal Access Token (el que empieza con `ghp_`).
 >
-> Si aún no lo tienes, aquí el resumen rápido:
-> 1. Ve a **github.com → tu foto → Settings → Developer settings → Personal access tokens → Tokens (classic)**
+> Si aún no lo tienes:
+> 1. Ve a **github.com → Settings → Developer settings → Personal access tokens → Tokens (classic)**
 > 2. Genera uno con el scope ✅ **repo**
 > 3. Cópialo y pégalo aquí
 >
 > El token solo se usará para crear la branch, subir los archivos y abrir el PR. No se guarda en ningún lado.
 
-Wait for the token before proceeding. Do not move to Phase 4 until you have received it.
+Wait for the token before proceeding.
 
 ---
 
-## Phase 4 — Submit the PR via GitHub API
+## Phase 4 — Submit the PR
 
-Use Bash to submit the plugin to the marketplace. Execute these steps in order:
+Use Python3 to interact with the GitHub API — it comes pre-installed on macOS, Linux and Windows and handles encoding reliably on all platforms. Run each step in order, substituting all `<placeholders>` with real values before executing.
 
-### Step 1 — Get the current SHA of main
+### Step 1 — Get SHA of main + marketplace.json SHA
 
-```bash
-curl -s \
-  -H "Authorization: token <TOKEN>" \
-  https://api.github.com/repos/SingularAgency/claude-marketplace/git/ref/heads/main \
-  | python3 -c "import sys,json; print(json.load(sys.stdin)['object']['sha'])"
+```python
+python3 -c "
+import urllib.request, json
+
+TOKEN = '<TOKEN>'
+OWNER = 'SingularAgency'
+REPO  = 'claude-marketplace'
+
+def get(path):
+    req = urllib.request.Request(
+        f'https://api.github.com{path}',
+        headers={'Authorization': f'token {TOKEN}', 'Accept': 'application/vnd.github.v3+json'}
+    )
+    with urllib.request.urlopen(req) as r:
+        return json.load(r)
+
+sha = get(f'/repos/{OWNER}/{REPO}/git/ref/heads/main')['object']['sha']
+mkt_sha = get(f'/repos/{OWNER}/{REPO}/contents/.claude-plugin/marketplace.json?ref=main')['sha']
+print('MAIN_SHA=' + sha)
+print('MKT_SHA=' + mkt_sha)
+"
 ```
 
-### Step 2 — Create a new branch
+Save both values — you'll need them in the next steps.
 
-Branch name: `add-plugin-<plugin-name>`
+### Step 2 — Create branch
 
-```bash
-curl -s -X POST \
-  -H "Authorization: token <TOKEN>" \
-  -H "Content-Type: application/json" \
-  https://api.github.com/repos/SingularAgency/claude-marketplace/git/refs \
-  -d '{"ref":"refs/heads/add-plugin-<plugin-name>","sha":"<SHA_FROM_STEP_1>"}'
+```python
+python3 -c "
+import urllib.request, json
+
+TOKEN  = '<TOKEN>'
+OWNER  = 'SingularAgency'
+REPO   = 'claude-marketplace'
+BRANCH = 'add-plugin-<plugin-name>'
+SHA    = '<MAIN_SHA>'
+
+data = json.dumps({'ref': f'refs/heads/{BRANCH}', 'sha': SHA}).encode()
+req  = urllib.request.Request(
+    f'https://api.github.com/repos/{OWNER}/{REPO}/git/refs',
+    data=data, method='POST',
+    headers={'Authorization': f'token {TOKEN}', 'Content-Type': 'application/json', 'Accept': 'application/vnd.github.v3+json'}
+)
+with urllib.request.urlopen(req) as r:
+    print('Branch created:', json.load(r)['ref'])
+"
 ```
 
-### Step 3 — Push each file
+### Step 3 — Push plugin files
 
-For each file in the plugin, push it via the contents API. Base64-encode the content:
+Run this script once for each file. Update `REPO_PATH` and `LOCAL_PATH` for each one.
 
-```bash
-CONTENT=$(base64 -w 0 /tmp/<plugin-name>/<file-path>)
-curl -s -X PUT \
-  -H "Authorization: token <TOKEN>" \
-  -H "Content-Type: application/json" \
-  https://api.github.com/repos/SingularAgency/claude-marketplace/contents/plugins/<plugin-name>/<file-path> \
-  -d "{\"message\":\"add <plugin-name>: <file-path>\",\"content\":\"$CONTENT\",\"branch\":\"add-plugin-<plugin-name>\"}"
+```python
+python3 -c "
+import urllib.request, json, base64
+
+TOKEN      = '<TOKEN>'
+OWNER      = 'SingularAgency'
+REPO       = 'claude-marketplace'
+BRANCH     = 'add-plugin-<plugin-name>'
+REPO_PATH  = 'plugins/<plugin-name>/.claude-plugin/plugin.json'
+LOCAL_PATH = '/tmp/<plugin-name>/.claude-plugin/plugin.json'
+
+with open(LOCAL_PATH, 'rb') as f:
+    content = base64.b64encode(f.read()).decode()
+
+data = json.dumps({'message': f'add {REPO_PATH}', 'content': content, 'branch': BRANCH}).encode()
+req  = urllib.request.Request(
+    f'https://api.github.com/repos/{OWNER}/{REPO}/contents/{REPO_PATH}',
+    data=data, method='PUT',
+    headers={'Authorization': f'token {TOKEN}', 'Content-Type': 'application/json', 'Accept': 'application/vnd.github.v3+json'}
+)
+with urllib.request.urlopen(req) as r:
+    print('Pushed:', json.load(r)['content']['path'])
+"
 ```
 
 Files to push (in order):
-1. `.claude-plugin/plugin.json`
-2. `skills/<skill-name>/SKILL.md`
-3. `README.md`
+1. `plugins/<plugin-name>/.claude-plugin/plugin.json` ← `/tmp/<plugin-name>/.claude-plugin/plugin.json`
+2. `plugins/<plugin-name>/skills/<skill-name>/SKILL.md` ← `/tmp/<plugin-name>/skills/<skill-name>/SKILL.md`
+3. `plugins/<plugin-name>/README.md` ← `/tmp/<plugin-name>/README.md`
 
-### Step 4 — Update marketplace.json to include the new plugin
+### Step 4 — Update marketplace.json
 
-First, fetch the current marketplace.json:
+```python
+python3 -c "
+import urllib.request, json, base64
 
-```bash
-curl -s \
-  -H "Authorization: token <TOKEN>" \
-  https://api.github.com/repos/SingularAgency/claude-marketplace/contents/.claude-plugin/marketplace.json?ref=add-plugin-<plugin-name>
-```
+TOKEN   = '<TOKEN>'
+OWNER   = 'SingularAgency'
+REPO    = 'claude-marketplace'
+BRANCH  = 'add-plugin-<plugin-name>'
+MKT_SHA = '<MKT_SHA>'
 
-This returns the file content (base64) and its SHA. Decode it, add the new plugin entry to the `plugins` array:
+def req(method, path, data=None):
+    r = urllib.request.Request(
+        f'https://api.github.com{path}', data=data, method=method,
+        headers={'Authorization': f'token {TOKEN}', 'Content-Type': 'application/json', 'Accept': 'application/vnd.github.v3+json'}
+    )
+    with urllib.request.urlopen(r) as resp:
+        return json.load(resp)
 
-```json
-{
-  "name": "<plugin-name>",
-  "source": "./plugins/<plugin-name>",
-  "description": "<description>",
-  "version": "0.1.0",
-  "author": {
-    "name": "Singular Agency",
-    "email": "as@singularagency.co"
-  },
-  "license": "MIT",
-  "category": "productivity"
-}
-```
+raw = req('GET', f'/repos/{OWNER}/{REPO}/contents/.claude-plugin/marketplace.json?ref={BRANCH}')
+mkt = json.loads(base64.b64decode(raw['content']))
 
-Then push the updated marketplace.json using the file's SHA for the update:
+mkt['plugins'].append({
+    'name':        '<plugin-name>',
+    'source':      './plugins/<plugin-name>',
+    'description': '<description>',
+    'version':     '0.1.0',
+    'author':      {'name': 'Singular Agency', 'email': 'as@singularagency.co'},
+    'license':     'MIT',
+    'category':    'productivity'
+})
 
-```bash
-UPDATED_CONTENT=$(echo '<updated_json>' | base64 -w 0)
-curl -s -X PUT \
-  -H "Authorization: token <TOKEN>" \
-  https://api.github.com/repos/SingularAgency/claude-marketplace/contents/.claude-plugin/marketplace.json \
-  -d "{\"message\":\"add <plugin-name> to marketplace\",\"content\":\"$UPDATED_CONTENT\",\"sha\":\"<FILE_SHA>\",\"branch\":\"add-plugin-<plugin-name>\"}"
+updated = base64.b64encode(json.dumps(mkt, indent=2).encode()).decode()
+result  = req('PUT', f'/repos/{OWNER}/{REPO}/contents/.claude-plugin/marketplace.json',
+    json.dumps({'message': 'add <plugin-name> to marketplace', 'content': updated, 'sha': MKT_SHA, 'branch': BRANCH}).encode()
+)
+print('Updated:', result['commit']['sha'])
+"
 ```
 
 ### Step 5 — Open the Pull Request
 
-```bash
-curl -s -X POST \
-  -H "Authorization: token <TOKEN>" \
-  https://api.github.com/repos/SingularAgency/claude-marketplace/pulls \
-  -d '{
-    "title": "Add plugin: <plugin-name>",
-    "body": "## New plugin: <plugin-name>\n\n<description>\n\n### Skills\n- `/<skill-name>` — <what it does>\n\n---\n*Submitted via plugin-creator*",
-    "head": "add-plugin-<plugin-name>",
-    "base": "main"
-  }'
+```python
+python3 -c "
+import urllib.request, json
+
+TOKEN  = '<TOKEN>'
+OWNER  = 'SingularAgency'
+REPO   = 'claude-marketplace'
+BRANCH = 'add-plugin-<plugin-name>'
+
+data = json.dumps({
+    'title': 'Add plugin: <plugin-name>',
+    'body':  '## New plugin: <plugin-name>\n\n<description>\n\n### Skills\n- \`/<skill-name>\` — <what it does>\n\n---\n*Submitted via plugin-creator*',
+    'head':  BRANCH,
+    'base':  'main'
+}).encode()
+
+req = urllib.request.Request(
+    f'https://api.github.com/repos/{OWNER}/{REPO}/pulls',
+    data=data, method='POST',
+    headers={'Authorization': f'token {TOKEN}', 'Content-Type': 'application/json', 'Accept': 'application/vnd.github.v3+json'}
+)
+with urllib.request.urlopen(req) as r:
+    print('PR:', json.load(r)['html_url'])
+"
 ```
 
 ---
@@ -235,8 +283,8 @@ curl -s -X POST \
 ## Phase 5 — Confirm and wrap up
 
 After the PR is created, tell the user:
-- The PR URL (from the API response `html_url` field)
+- The PR URL
 - That a reviewer at Singular Agency will approve and merge it
-- Once merged, the plugin will be available to the whole team via `/plugin install <plugin-name>@singular-agency-marketplace`
+- Once merged, the plugin will be available via `/plugin install <plugin-name>@singular-agency-marketplace`
 
-Do not expose raw API responses or internal paths to the user.
+Do not expose the token, raw API responses, or internal file paths to the user.
