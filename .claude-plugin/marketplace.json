@@ -69,6 +69,18 @@
         "productivity"
       ],
       "category": "productivity"
+    },
+    {
+      "name": "po-meeting-assistant",
+      "source": "./plugins/po-meeting-assistant",
+      "description": "Autonomous meeting assistant for Product Owners. Syncs context from Slack, Gmail, and Read.ai, then delivers a strategic briefing before each client meeting.",
+      "version": "0.1.0",
+      "author": {
+        "name": "Singular Agency",
+        "email": "as@singularagency.co"
+      },
+      "license": "MIT",
+      "category": "productivity"
     }
   ]
 }
