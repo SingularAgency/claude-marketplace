@@ -24,13 +24,14 @@ CREATE TABLE IF NOT EXISTS po_preferences (
 -- Maps each client to their data sources.
 -- ============================================================
 CREATE TABLE IF NOT EXISTS clients (
-  id                UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
-  po_id             TEXT        NOT NULL REFERENCES po_preferences(po_id) ON DELETE CASCADE,
-  client_id         TEXT        NOT NULL,
-  display_name      TEXT        NOT NULL,
-  email_domains     TEXT[]      NOT NULL DEFAULT '{}',
-  calendar_keywords TEXT[]      NOT NULL DEFAULT '{}',
-  created_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
+  id                   UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+  po_id                TEXT        NOT NULL REFERENCES po_preferences(po_id) ON DELETE CASCADE,
+  client_id            TEXT        NOT NULL,
+  display_name         TEXT        NOT NULL,
+  email_domains        TEXT[]      NOT NULL DEFAULT '{}',
+  calendar_keywords    TEXT[]      NOT NULL DEFAULT '{}',
+  airtable_client_name TEXT,                -- exact Client Name value in Airtable OKR base (nullable)
+  created_at           TIMESTAMPTZ NOT NULL DEFAULT now(),
   UNIQUE(po_id, client_id)
 );
 
