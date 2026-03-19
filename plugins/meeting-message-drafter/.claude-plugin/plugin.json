@@ -1,0 +1,11 @@
+{
+  "name": "meeting-message-drafter",
+  "version": "1.0.0",
+  "description": "Drafts messages, follow-ups, summaries, and any communication based on real meeting transcripts stored in Airtable.",
+  "skills": [
+    {
+      "name": "meeting-message-drafter",
+      "path": "skills/meeting-message-drafter"
+    }
+  ]
+}
