@@ -1,0 +1,20 @@
+{
+  "mcpServers": {
+    "Slack": {
+      "type": "http",
+      "url": "https://mcp.slack.com/mcp"
+    },
+    "Google Calendar": {
+      "type": "http",
+      "url": "https://gcal.mcp.claude.com/mcp"
+    },
+    "Supabase": {
+      "type": "http",
+      "url": "https://mcp.supabase.com/mcp"
+    },
+    "Read.ai": {
+      "type": "http",
+      "url": "${READAI_MCP_URL}"
+    }
+  }
+}
