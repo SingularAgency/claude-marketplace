@@ -6,9 +6,11 @@ Guide the user through creating a new plugin for the Singular Agency marketplace
 
 ---
 
-## Phase 0 — Welcome & Prerequisites
+## Phase 0 — Welcome & GitHub MCP Check
 
-Before asking anything else, show the user this onboarding message exactly as written:
+Before showing anything to the user, silently check whether the GitHub MCP connector is available by looking for tools prefixed with `mcp__github__` in your tool list (e.g. `mcp__github__create_branch`, `mcp__github__create_pull_request`, `mcp__github__push_files`).
+
+**If GitHub MCP tools ARE available**, show this message:
 
 ---
 
@@ -16,30 +18,60 @@ Before asking anything else, show the user this onboarding message exactly as wr
 
 Con esta herramienta puedes agregar un nuevo plugin al marketplace del equipo en minutos. Al final del proceso se abrirá un Pull Request en GitHub automáticamente — solo necesitas que alguien con acceso lo apruebe.
 
-**Antes de empezar, necesitas dos cosas:**
-
-**1. Tener Claude Code instalado** (para poder usar los plugins del marketplace).
-
-**2. Un GitHub Personal Access Token (PAT)** — lo vas a necesitar al final para subir el PR. Aquí te explico cómo obtenerlo:
-
-> **Cómo obtener tu GitHub Token:**
->
-> 1. Ve a [github.com](https://github.com) e inicia sesión con tu cuenta de Singular Agency
-> 2. Haz clic en tu foto de perfil (arriba a la derecha) → **Settings**
-> 3. En el menú izquierdo, baja hasta el final → **Developer settings**
-> 4. Selecciona **Personal access tokens** → **Tokens (classic)**
-> 5. Clic en **Generate new token (classic)**
-> 6. Dale un nombre descriptivo, por ejemplo: `singular-agency-marketplace`
-> 7. En **Expiration**, elige 30 días o el tiempo que prefieras
-> 8. Marca el scope: ✅ **repo** (es el único que necesitas)
-> 9. Clic en **Generate token** al fondo de la página
-> 10. **Copia el token inmediatamente** — GitHub solo te lo muestra una vez
->
-> ⚠️ El token empieza con `ghp_`. Guárdalo en un lugar seguro temporalmente.
-
-**No necesitas el token todavía** — te lo pediré al final, justo antes de enviar el PR.
+✅ **Conector de GitHub detectado.** No necesitas configurar nada — al final del proceso el PR se enviará automáticamente.
 
 ¿Listo para empezar? Cuéntame qué plugin quieres crear.
+
+---
+
+**Si GitHub MCP tools NO están disponibles**, muestra este mensaje y guía al usuario paso a paso:
+
+---
+
+👋 **Bienvenido al Plugin Creator de Singular Agency**
+
+Con esta herramienta puedes agregar un nuevo plugin al marketplace del equipo en minutos. Para enviar el PR automáticamente al final, primero necesitas instalar el conector de GitHub. Te guío en 4 pasos rápidos:
+
+**Paso 1 — Crea un GitHub Personal Access Token:**
+1. Ve a [github.com/settings/tokens](https://github.com/settings/tokens) (usa tu cuenta de Singular Agency)
+2. Clic en **"Generate new token (classic)"**
+3. Nombre: `singular-agency-marketplace` · Expiración: 90 días
+4. Marca solo el scope: ✅ **repo**
+5. Clic en **Generate token** — copia el token inmediatamente (empieza con `ghp_`)
+
+**Paso 2 — Abre el archivo de configuración de Claude:**
+- **macOS:** `~/Library/Application Support/Claude/claude_desktop_config.json`
+- **Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
+
+**Paso 3 — Agrega este bloque al archivo** (reemplaza `TU_TOKEN_AQUI` con el token del paso 1):
+
+```json
+{
+  "mcpServers": {
+    "github": {
+      "command": "docker",
+      "args": [
+        "run", "-i", "--rm", "-e",
+        "GITHUB_PERSONAL_ACCESS_TOKEN",
+        "ghcr.io/github/github-mcp-server"
+      ],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "TU_TOKEN_AQUI"
+      }
+    }
+  }
+}
+```
+
+> ⚠️ Si ya tienes otros `mcpServers` configurados, solo agrega el bloque `"github": { ... }` dentro del objeto existente — no reemplaces todo el archivo.
+
+**Paso 4 — Reinicia Claude Desktop** para que active el conector.
+
+---
+
+Usa `AskUserQuestion` para preguntarle al usuario si ya completó la instalación y reinició Claude. Una vez que confirme, verifica de nuevo si los tools `mcp__github__*` están disponibles:
+- Si ya aparecen → confirma con "✅ ¡Conector de GitHub activo! Continuemos." y sigue con Phase 1.
+- Si aún no aparecen → indícale que asegure haber reiniciado completamente Claude Desktop y lo intente de nuevo.
 
 ---
 
@@ -117,79 +149,53 @@ Write a brief README explaining what the plugin does and how to install it:
 
 ---
 
-## Phase 3 — Ask for GitHub token
+## Phase 3 — Submit the PR via GitHub MCP
 
-Tell the user this message exactly:
+Use the GitHub MCP tools to submit the plugin. These tools are available as `mcp__github__*`. Execute these steps in order.
 
-> **Último paso antes de enviar el PR.**
->
-> Necesito tu GitHub Personal Access Token (el que empieza con `ghp_`).
->
-> Si aún no lo tienes, aquí el resumen rápido:
-> 1. Ve a **github.com → tu foto → Settings → Developer settings → Personal access tokens → Tokens (classic)**
-> 2. Genera uno con el scope ✅ **repo**
-> 3. Cópialo y pégalo aquí
->
-> El token solo se usará para crear la branch, subir los archivos y abrir el PR. No se guarda en ningún lado.
+### Step 1 — Verify connection
 
-Wait for the token before proceeding. Do not move to Phase 4 until you have received it.
+Call `mcp__github__get_me` to confirm authentication is working. If it returns an error, let the user know and refer back to Phase 0 setup instructions.
 
----
+### Step 2 — Read marketplace.json from main
 
-## Phase 4 — Submit the PR via GitHub API
+Call `mcp__github__get_file_contents` with:
+- `owner`: `SingularAgency`
+- `repo`: `claude-marketplace`
+- `path`: `.claude-plugin/marketplace.json`
+- `ref`: `main`
 
-Use Bash to submit the plugin to the marketplace. Execute these steps in order:
+Save both the decoded content (the JSON) and the file's `sha` — you'll need both in Step 5.
 
-### Step 1 — Get the current SHA of main
-
-```bash
-curl -s \
-  -H "Authorization: token <TOKEN>" \
-  https://api.github.com/repos/SingularAgency/claude-marketplace/git/ref/heads/main \
-  | python3 -c "import sys,json; print(json.load(sys.stdin)['object']['sha'])"
-```
-
-### Step 2 — Create a new branch
+### Step 3 — Create a new branch
 
 Branch name: `add-plugin-<plugin-name>`
 
-```bash
-curl -s -X POST \
-  -H "Authorization: token <TOKEN>" \
-  -H "Content-Type: application/json" \
-  https://api.github.com/repos/SingularAgency/claude-marketplace/git/refs \
-  -d '{"ref":"refs/heads/add-plugin-<plugin-name>","sha":"<SHA_FROM_STEP_1>"}'
-```
+Call `mcp__github__create_branch` with:
+- `owner`: `SingularAgency`
+- `repo`: `claude-marketplace`
+- `branch`: `add-plugin-<plugin-name>`
+- `from_branch`: `main`
 
-### Step 3 — Push each file
+### Step 4 — Push all plugin files
 
-For each file in the plugin, push it via the contents API. Base64-encode the content:
+Call `mcp__github__push_files` with:
+- `owner`: `SingularAgency`
+- `repo`: `claude-marketplace`
+- `branch`: `add-plugin-<plugin-name>`
+- `message`: `add plugin: <plugin-name>`
+- `files`: an array with the content of each file read from `/tmp/<plugin-name>/`
 
-```bash
-CONTENT=$(base64 -w 0 /tmp/<plugin-name>/<file-path>)
-curl -s -X PUT \
-  -H "Authorization: token <TOKEN>" \
-  -H "Content-Type: application/json" \
-  https://api.github.com/repos/SingularAgency/claude-marketplace/contents/plugins/<plugin-name>/<file-path> \
-  -d "{\"message\":\"add <plugin-name>: <file-path>\",\"content\":\"$CONTENT\",\"branch\":\"add-plugin-<plugin-name>\"}"
-```
+Files to include:
+1. `plugins/<plugin-name>/.claude-plugin/plugin.json`
+2. `plugins/<plugin-name>/skills/<skill-name>/SKILL.md`
+3. `plugins/<plugin-name>/README.md`
 
-Files to push (in order):
-1. `.claude-plugin/plugin.json`
-2. `skills/<skill-name>/SKILL.md`
-3. `README.md`
+If `mcp__github__push_files` is not available, use `mcp__github__create_or_update_file` for each file individually.
 
-### Step 4 — Update marketplace.json to include the new plugin
+### Step 5 — Update marketplace.json
 
-First, fetch the current marketplace.json:
-
-```bash
-curl -s \
-  -H "Authorization: token <TOKEN>" \
-  https://api.github.com/repos/SingularAgency/claude-marketplace/contents/.claude-plugin/marketplace.json?ref=add-plugin-<plugin-name>
-```
-
-This returns the file content (base64) and its SHA. Decode it, add the new plugin entry to the `plugins` array:
+Take the marketplace.json content from Step 2 and add the new plugin entry to the `plugins` array:
 
 ```json
 {
@@ -206,37 +212,43 @@ This returns the file content (base64) and its SHA. Decode it, add the new plugi
 }
 ```
 
-Then push the updated marketplace.json using the file's SHA for the update:
+Then call `mcp__github__create_or_update_file` with:
+- `owner`: `SingularAgency`
+- `repo`: `claude-marketplace`
+- `path`: `.claude-plugin/marketplace.json`
+- `branch`: `add-plugin-<plugin-name>`
+- `message`: `add <plugin-name> to marketplace`
+- `content`: the updated JSON as a string
+- `sha`: the SHA obtained in Step 2 (required to update an existing file)
 
-```bash
-UPDATED_CONTENT=$(echo '<updated_json>' | base64 -w 0)
-curl -s -X PUT \
-  -H "Authorization: token <TOKEN>" \
-  https://api.github.com/repos/SingularAgency/claude-marketplace/contents/.claude-plugin/marketplace.json \
-  -d "{\"message\":\"add <plugin-name> to marketplace\",\"content\":\"$UPDATED_CONTENT\",\"sha\":\"<FILE_SHA>\",\"branch\":\"add-plugin-<plugin-name>\"}"
-```
+### Step 6 — Open the Pull Request
 
-### Step 5 — Open the Pull Request
+Call `mcp__github__create_pull_request` with:
+- `owner`: `SingularAgency`
+- `repo`: `claude-marketplace`
+- `title`: `Add plugin: <plugin-name>`
+- `body`:
+  ```
+  ## New plugin: <plugin-name>
 
-```bash
-curl -s -X POST \
-  -H "Authorization: token <TOKEN>" \
-  https://api.github.com/repos/SingularAgency/claude-marketplace/pulls \
-  -d '{
-    "title": "Add plugin: <plugin-name>",
-    "body": "## New plugin: <plugin-name>\n\n<description>\n\n### Skills\n- `/<skill-name>` — <what it does>\n\n---\n*Submitted via plugin-creator*",
-    "head": "add-plugin-<plugin-name>",
-    "base": "main"
-  }'
-```
+  <description>
+
+  ### Skills
+  - `/<skill-name>` — <what it does>
+
+  ---
+  *Submitted via plugin-creator*
+  ```
+- `head`: `add-plugin-<plugin-name>`
+- `base`: `main`
 
 ---
 
-## Phase 5 — Confirm and wrap up
+## Phase 4 — Confirm and wrap up
 
-After the PR is created, tell the user:
-- The PR URL (from the API response `html_url` field)
+After the PR is created successfully, tell the user:
+- The PR URL (from the tool response `html_url` field)
 - That a reviewer at Singular Agency will approve and merge it
 - Once merged, the plugin will be available to the whole team via `/plugin install <plugin-name>@singular-agency-marketplace`
 
-Do not expose raw API responses or internal paths to the user.
+Do not expose raw API responses or internal file paths to the user.

@@ -12,16 +12,16 @@ Guides Singular Agency team members through building a new Claude plugin and sub
 
 Just say **"create a plugin"** or **"I want to add a plugin to the marketplace"** and Claude will:
 
-1. Ask what the plugin should do
-2. Generate all the required files (manifest, skill, README)
-3. Ask for your GitHub token
+1. **Detect the GitHub connector** automatically. If it's installed, the PR gets submitted without any extra setup. If not, Claude guides you through installing it in minutes.
+2. Ask what the plugin should do
+3. Generate all the required files (manifest, skill, README)
 4. Create a branch, push the files, update `marketplace.json`, and open a PR on `SingularAgency/claude-marketplace` — all automatically
 
 A reviewer approves the PR, and once merged the plugin is live for the whole team.
 
 ## Requirements
 
-- A GitHub Personal Access Token with `repo` scope (only needed at submission time)
+- The GitHub MCP connector installed in Claude Desktop (the skill guides you through setup if it's not detected)
 
 ## Skills
 
