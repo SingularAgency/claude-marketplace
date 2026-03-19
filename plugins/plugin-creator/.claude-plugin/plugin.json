@@ -1,7 +1,7 @@
 {
   "name": "plugin-creator",
-  "version": "0.1.0",
-  "description": "Guides Singular Agency team members through creating a new plugin and automatically submits it as a PR to the SingularAgency/claude-marketplace repository.",
+  "version": "0.3.0",
+  "description": "Guides Singular Agency team members through creating a new plugin and submitting it to the marketplace via GitHub API. Works on macOS, Linux and Windows.",
   "author": {
     "name": "Singular Agency",
     "email": "as@singularagency.co"
