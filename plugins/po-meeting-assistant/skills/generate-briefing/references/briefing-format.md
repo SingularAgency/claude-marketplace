@@ -1,13 +1,23 @@
 # Briefing Format — Synthesis Instructions
 
+## Filosofía del briefing
+
+El PO entra a una reunión con un cliente. No necesita una lista de tareas — necesita saber **qué importa estratégicamente** y cómo llevar la conversación. El briefing debe leerlo en 60 segundos y salir con claridad sobre qué defender, qué negociar y qué resolver.
+
+Priorizar siempre: impacto sobre exhaustividad. Si algo no es accionable o estratégico, no va.
+
+---
+
 ## Synthesis Rules
 
-- Be concise and direct. The PO is 10 minutes from a meeting.
-- Prioritize actionable information over background.
-- If there's a contradiction between sources (email says one thing, Slack says another), surface it explicitly — don't pick one silently.
-- Connect dots across sources when relevant. If a client cancelled a feature by email AND the team is complaining about that same feature in Slack, that's one insight, not two.
-- If there is nothing significant to report for a section, omit that section entirely. Don't pad.
-- Use the client's `display_name`, not the `client_id` slug.
+- Enfocarse en **qué decir**, no en qué pasó. Transformar hechos en puntos de conversación.
+- Si hay información de OKRs o metas del cliente en los datos, conectarlos explícitamente con lo que se va a discutir.
+- Si hay contradicción entre fuentes (email dice una cosa, Slack otra), surfacearla como punto de negociación.
+- Cruzar fuentes activamente: si el equipo interno discutió algo que el cliente también mencionó, eso es el punto más importante del briefing.
+- Omitir secciones completas si no hay datos relevantes. No rellenar.
+- Tono: directo, de colega a colega. No corporativo.
+
+---
 
 ## Output Format (Slack DM)
 
@@ -15,56 +25,69 @@
 📋 *BRIEFING: [Client Display Name]* — Reunión en [X] minutos
 
 ━━━━━━━━━━━━━━━━━━━━━━━
-*🔴 BLOQUEOS / URGENTE*
-• [Only list items with strategic_weight 4-5. If none, omit this section entirely.]
+*📊 OKRs ACTIVOS* [omitir sección completa si no hay datos de Airtable]
+*[Nombre del Objetivo]* — [Quarter] · [Status] · [Avg%]% completado
+  • [Key Result 1] — [Current]% / [Target]% _(Status)_
+  • [Key Result 2] — [Current]% / [Target]% _(Status)_
 
-*📌 PENDIENTES*
-• [What's unresolved. What the client asked for. What was promised.]
-• [Include source: "(email, hace 3 días)" or "(Slack #proyecto-acme, ayer)"]
+*🎯 PUNTOS ESTRATÉGICOS A TRATAR*
+[2-4 temas concretos para llevar a la reunión, formulados como puntos de conversación.
+Cuando aplique, conectar explícitamente con el OKR relevante.]
 
-*💬 ÚLTIMA INTERACCIÓN*
-• [Most recent significant contact — what was discussed, decided, or requested.]
+• *[Tema 1]:* [descripción + por qué importa hoy] → _conecta con OKR: [nombre]_ _(fuente, hace X días)_
+• *[Tema 2]:* [descripción + ángulo estratégico] _(fuente, hace X días)_
 
-*⚠️ CONTEXTO INTERNO*
-• [Relevant items from global/team channels that may affect this meeting.]
-• [Only include if there's something genuinely relevant. Omit if not.]
+*🔴 RIESGOS / PUNTOS SENSIBLES*
+[Solo si hay algo que puede generar fricción, cancelación, o afectar la relación. Omitir si no hay.]
 
-*💡 SUGERENCIA*
-[One concrete recommendation for how to approach this meeting based on the context above. 1-2 sentences max.]
+• [Riesgo concreto] [si aplica: → _pone en riesgo OKR: [nombre]_]
+
+*⚡ CONTEXTO INTERNO RELEVANTE*
+[Algo del equipo que el PO debe saber antes de entrar. Solo si afecta lo que se va a discutir.]
+
+• [Insight interno] _(#canal, hace X horas)_
+
+*💡 ÁNGULO RECOMENDADO*
+[Una sola recomendación basada en evidencia concreta. Si hay OKRs, anclarla en ellos. 2-3 oraciones.]
 ━━━━━━━━━━━━━━━━━━━━━━━
-_Fuentes: [N] mensajes de Slack · [N] emails · [N] transcripciones | Datos hasta: [last_synced_at]_
+_Fuentes: [N] mensajes de Slack · [N] emails · [N] transcripciones · [N] OKRs de Airtable | Datos hasta: [timestamp]_
+_Enviado usando @Claude_
 ```
 
-## Example Briefing
+---
 
-```
-📋 *BRIEFING: Acme Inc* — Reunión en 9 minutos
+## Cómo construir los Puntos Estratégicos
 
-━━━━━━━━━━━━━━━━━━━━━━━
-*🔴 BLOQUEOS / URGENTE*
-• Cancelaron el feature de pagos por email ayer a las 3pm. Razón: cambio de prioridades internas.
+No transcribir lo que pasó. Transformarlo en punto de conversación:
 
-*📌 PENDIENTES*
-• Definen el 15/04 si continúan con el módulo de reportes *(email, hace 5 días)*
-• Esperan respuesta sobre el roadmap Q3 *(Slack #cliente-acme, anteayer)*
+| En lugar de... | Escribir... |
+|---|---|
+| "Claudia preguntó por el timeline del admin panel" | "Admin panel invoices: el cliente está esperando un timeline — definir uno hoy o acordar fecha de respuesta" |
+| "Frederick compartió el doc de migración" | "Documento de migración LifeFile/Hallandale listo para revisión — buena oportunidad para presentarlo y alinearse antes del go-live" |
+| "Hubo problemas con el gateway de pagos" | "Gateway de pagos degradado esta semana — si el cliente lo trae, el equipo ya tiene el análisis" |
 
-*💬 ÚLTIMA INTERACCIÓN*
-• Email de Maria Lopez (maria@acme.com) ayer: cancelación del feature de pagos y consulta sobre crédito por las horas ya invertidas.
+---
 
-*⚠️ CONTEXTO INTERNO*
-• El equipo de backend reportó en #alertas-prod hace 2h que el gateway de pagos tiene latencia elevada — probablemente relacionado con la cancelación del cliente.
-• En #dev-general el equipo estima 50% de avance en el feature cancelado.
+## Uso de OKRs de Airtable
 
-*💡 SUGERENCIA*
-Proponer convertir las horas ya invertidas en crédito para el módulo de reportes. El equipo tiene capacidad y el cliente ya manifestó interés.
-━━━━━━━━━━━━━━━━━━━━━━━
-_Fuentes: 12 mensajes de Slack · 3 emails · 1 transcripción | Datos hasta: hace 18 min_
-```
+Los OKRs vienen directamente de Airtable — son datos reales, no inferencias. Usarlos así:
+
+**En la sección OKRs:** mostrar el estado actual de cada Objective con sus Key Results y porcentaje de progreso. Un KR con Current < 50% del Target y Status no completado = en riesgo.
+
+**En los Puntos Estratégicos:** cuando un tema de conversación conecta con un OKR, decirlo explícitamente: `→ conecta con OKR: [nombre del objetivo]`. Esto le da al PO munición para enmarcar la conversación en términos de impacto, no de tareas.
+
+**En Riesgos:** si hay una cancelación, bloqueo o problema que amenaza directamente el logro de un Key Result, mencionarlo: `→ pone en riesgo OKR: [nombre]`.
+
+**En el Ángulo Recomendado:** anclar la recomendación en los OKRs cuando sea posible. Ejemplo: *"Con el KR de automatización al 30%, esta reunión es el momento para alinear prioridades de Q2 antes de que el gap se haga más grande."*
+
+Si Airtable no tiene OKRs para este cliente, omitir la sección completa y no mencionarla.
+
+---
 
 ## Quality Checks Before Sending
 
-- [ ] Is the most critical item (highest strategic_weight) at the top?
-- [ ] Are sources cited with relative time ("hace 2h", "ayer", "hace 3 días")?
-- [ ] Is the suggestion based on actual evidence from the context, not generic advice?
-- [ ] Is everything in Spanish (or the PO's configured language)?
-- [ ] Is the total message under 400 words? If not, cut the lowest-weight items.
+- [ ] ¿Cada punto estratégico tiene un "¿y para qué?" implícito? (no es solo un hecho, es un punto de acción)
+- [ ] ¿Las fuentes tienen timestamp relativo ("ayer", "hace 2h") no fechas absolutas?
+- [ ] ¿El Ángulo Recomendado está basado en evidencia concreta de los datos?
+- [ ] ¿El mensaje total es menor a 350 palabras?
+- [ ] ¿Está todo en español?
