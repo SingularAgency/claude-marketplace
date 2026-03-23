@@ -1,0 +1,189 @@
+---
+name: generate-summary
+description: >
+  Use this skill when the user says "summarize my last meeting", "post the meeting summary",
+  "generate a call breakdown", "brief the team on the call", "post the Read AI summary to Slack",
+  "share the meeting recap", "generate a summary for [client name]", "post the breakdown for [project]",
+  or any phrase requesting a structured post-meeting summary from a Read AI call.
+metadata:
+  version: "0.1.0"
+  author: "Singular Agency"
+---
+
+# Generate Meeting Summary
+
+Fetch a meeting from Read AI, generate a structured summary, and post it to Slack — with the headline as the parent message and the full breakdown as a thread reply.
+
+---
+
+## Step 0 — First-run check
+
+Read `~/.read-ai-summary-config.json` using Bash.
+
+If the file does not exist OR `setup_complete` is not `true`:
+→ Tell the user: "It looks like this is your first time using the meeting summary plugin. Let me run the setup first."
+→ Run the `setup` skill flow completely before continuing here.
+
+---
+
+## Step 1 — Fetch meetings from Read AI
+
+Call `list_meetings` with:
+```
+limit: 5
+expand: ["summary", "action_items", "key_questions", "topics", "chapter_summaries"]
+```
+
+Each meeting returns:
+- `id`, `title`, `start_time_ms`, `end_time_ms`
+- `participants[]` — name, email, attended boolean
+- `owner` — name, email
+- `report_url` — direct link to the Read AI report
+- `folders[]` — tags like "Sales Strategy", "One-on-One"
+- `platform` — meet, zoom, teams
+- `summary` — full prose overview
+- `chapter_summaries[]` — [{title, description}] per meeting section
+- `action_items[]` — follow-up tasks as plain strings
+- `key_questions[]` — important questions raised
+- `topics[]` — main themes discussed
+
+---
+
+## Step 2 — Select the meeting
+
+If the user named a client or project, find the closest match in the list by title or participant name.
+
+If the user said "last meeting" or nothing specific, use the first item (most recent).
+
+If uncertain (multiple possible matches), show a numbered list of the 5 meetings — title + date formatted as "Mon Mar 23, 3:00 PM" — and ask the user to pick one.
+
+---
+
+## Step 3 — Identify Project Name and Client Name
+
+These two values drive the Slack headline. Derive them as follows:
+
+**Client Name**: The name of the external participant (different email domain from the Singular Agency team). If multiple external participants, use the company name inferred from their email domain (e.g., `viapromeds.com` → `ViaproMeds`). If all participants are internal (singularagency.co), use the meeting title instead.
+
+**Project Name**: Look for a project name in:
+1. The meeting `title` (e.g., "HPL Pipeline Review" → project = "HPL")
+2. The `folders[]` field (e.g., "Sales Strategy")
+3. The meeting `summary` (look for phrases like "building X", "project X", "working on X")
+
+If neither can be confidently inferred, ask the user: "What's the project name for this meeting?" — keep it brief (e.g., "Travelog", "ViaproMeds", "Front Line Roofing").
+
+**Headline format**:
+```
+ProjectName — ClientName
+```
+Examples:
+- `Travelog — Jamie Sandy`
+- `ViaproMeds — Marcelo Gandola`
+- `HPL Pipeline — Internal Sync`
+
+---
+
+## Step 4 — Detect technology type and accountable team member
+
+Read `role_assignments` from config. Follow the full detection logic in `references/tech-detection.md`.
+
+Search these meeting fields for keyword matches (case-insensitive):
+- `title`, `topics[]`, `summary`, `chapter_summaries[].title`, `chapter_summaries[].description`
+
+Match against each category's `keywords` array in `role_assignments`.
+
+**Result**: a list of matched `user_ids` (may be from multiple categories if meeting covers multiple tech types), and their formatted `<@USER_ID>` strings.
+
+If the user explicitly named someone in their request (e.g., "tag William"), override detection and use that person.
+
+---
+
+## Step 5 — Generate the summary body
+
+Use the meeting data to write the full breakdown. Follow the format and rules in `references/output-format.md`.
+
+Prepend the tags at the very top of the thread body (only if a match was found):
+
+```
+<@USER_ID> <@USER_ID2>
+
+📋 *Call Breakdown — ClientName*
+...rest of summary...
+```
+
+If multiple tech types matched, list all tags together on one line:
+```
+<@U_WILLIAM> <@U_FABIAN>
+```
+
+The summary body will be posted as a **thread reply** — NOT the main message.
+
+---
+
+## Step 6 — Choose the Slack channel
+
+Read `default_channel` and `auto_post` from config.
+
+- If `auto_post: true` AND `default_channel` is set → post immediately without asking.
+- If `auto_post: false` OR no default channel → show the user a preview of both the headline and the summary body (including the accountable tag), confirm the channel, then post.
+
+To confirm: "I'll post this to <#channel-name>. Ready?" Wait for user confirmation unless `auto_post` is on.
+
+---
+
+## Step 7 — Post the parent message to Slack
+
+Call `slack_send_message` with:
+- `channel_id`: the selected channel ID
+- `text`: the headline only — **`ProjectName — ClientName`**
+
+Capture the `ts` (timestamp) from the response. You will need it for the thread reply.
+
+If `mention_users` is set in config (global tags), prepend them to the headline:
+```
+<@USER_ID> <@USER_ID2> | ProjectName — ClientName
+```
+
+Note: accountable team members (from role_assignments) are tagged in the thread, NOT the headline.
+
+---
+
+## Step 8 — Post the full summary as a thread reply
+
+Call `slack_send_message` again with:
+- `channel_id`: same channel
+- `thread_ts`: the `ts` value captured in Step 7
+- `text`: the full formatted summary body including the accountable line at the top
+
+This creates a thread under the headline message. The channel feed stays clean — just showing `ProjectName — ClientName` — while the full breakdown and the tagged accountable are in the thread.
+
+---
+
+## Step 9 — Update posted meeting IDs (prevent duplicates)
+
+After both Slack messages are successfully posted, add the meeting ID to `posted_meeting_ids` in the config so the auto-detect scheduled task doesn't post it again.
+
+```bash
+python3 -c "
+import json
+with open('$HOME/.read-ai-summary-config.json', 'r') as f:
+    config = json.load(f)
+config.setdefault('posted_meeting_ids', []).append('<MEETING_ID>')
+with open('$HOME/.read-ai-summary-config.json', 'w') as f:
+    json.dump(config, f, indent=2)
+"
+```
+
+Replace `<MEETING_ID>` with the actual `id` field from the meeting data.
+
+---
+
+## Step 10 — Confirm and share links
+
+After both posts succeed, tell the user:
+
+"✅ Posted to <#channel-name>
+- Headline: *ProjectName — ClientName*
+- Full breakdown + accountable tag in the thread
+
+📎 Read AI report: [report_url]"
