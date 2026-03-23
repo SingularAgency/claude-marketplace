@@ -81,6 +81,18 @@
       },
       "license": "MIT",
       "category": "productivity"
+    },
+    {
+      "name": "hpl-meeting-summary",
+      "source": "./plugins/hpl-meeting-summary",
+      "description": "Automatically generates structured meeting summaries from Read AI and posts them to Slack \u2014 with client context, action items, next steps, and smart team tagging by technology type.",
+      "version": "0.1.0",
+      "author": {
+        "name": "Singular Agency",
+        "email": "as@singularagency.co"
+      },
+      "license": "MIT",
+      "category": "productivity"
     }
   ]
 }
