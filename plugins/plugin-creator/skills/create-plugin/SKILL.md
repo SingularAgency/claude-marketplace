@@ -102,9 +102,25 @@ Refer to `references/plugin-template.md` for a complete worked example.
 
 ---
 
-## Phase 3 — Ask for GitHub token
+## Phase 3 — Obtain GitHub token
 
-Tell the user:
+Before asking the user for a token, check if one is already saved by running this command:
+
+```bash
+python3 -c "
+import json, os
+cfg = os.path.expanduser('~/.singular-agency-plugin-creator.json')
+if os.path.exists(cfg):
+    data = json.load(open(cfg))
+    tok = data.get('github_token', '')
+    print(tok)
+else:
+    print('')
+"
+```
+
+- **If the output is a non-empty string starting with `ghp_`**: use that token directly and skip to Phase 4 — do NOT ask the user for it again.
+- **If the output is empty**: tell the user:
 
 > **Último paso antes de enviar el PR.**
 >
@@ -115,9 +131,26 @@ Tell the user:
 > 2. Genera uno con el scope ✅ **repo**
 > 3. Cópialo y pégalo aquí
 >
-> El token solo se usará para crear la branch, subir los archivos y abrir el PR. No se guarda en ningún lado.
+> Lo guardaré localmente para no pedírtelo la próxima vez.
 
-Wait for the token before proceeding.
+Wait for the user to paste the token. Once received, save it by running:
+
+```bash
+python3 -c "
+import json, os
+cfg = os.path.expanduser('~/.singular-agency-plugin-creator.json')
+data = {}
+if os.path.exists(cfg):
+    data = json.load(open(cfg))
+data['github_token'] = '<PASTE_TOKEN_HERE>'
+with open(cfg, 'w') as f:
+    json.dump(data, f, indent=2)
+os.chmod(cfg, 0o600)
+print('Token guardado.')
+"
+```
+
+Replace `<PASTE_TOKEN_HERE>` with the actual token the user provided before running the command. Then proceed to Phase 4.
 
 ---
 
