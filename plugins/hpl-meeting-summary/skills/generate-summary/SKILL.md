@@ -100,7 +100,21 @@ If the user explicitly named someone in their request (e.g., "tag William"), ove
 
 ## Step 5 — Generate the summary body
 
-Use the meeting data to write the full breakdown. Follow the format and rules in `references/output-format.md`.
+Use the meeting data to write a **full, detailed strategic brief**. Follow the format and all rules in `references/output-format.md`. The goal is NOT a quick recap — it is a complete picture that someone who wasn't on the call can read and immediately act on.
+
+**Extract the maximum detail available from each field:**
+- `summary` — use this for the "Who They Are" and "Context & Current State" sections. Do not paraphrase lazily — pull out all the specific details, tools, systems, and context mentioned.
+- `topics[]` — map these to the "Pain Points" and "What Was Discussed" sections.
+- `chapter_summaries[]` — use each chapter as a "What Was Discussed" bullet. Write 1–2 sentences per chapter, not just the title.
+- `action_items[]` — use verbatim or lightly cleaned up for the Action Items section. Always include the assignee name.
+- `key_questions[]` — use for the "Key Questions Raised" section.
+
+**Mandatory for client calls:**
+- Fill in EVERY section of the Full Format — do not skip or merge sections.
+- Write at least 3 pain points with operational context for each.
+- Include direct quotes from the client if they appear in `summary` or `chapter_summaries`.
+- Write a clear "Strategic Read" with an honest assessment and recommendation.
+- Make action items and timelines specific — include names, dates, and deliverables.
 
 Prepend the tags at the very top of the thread body (only if a match was found):
 
