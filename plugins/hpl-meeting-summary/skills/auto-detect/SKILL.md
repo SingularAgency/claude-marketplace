@@ -58,10 +58,33 @@ Skip all internal meetings silently. Only continue with client meetings.
 
 ## Step 4 — Filter: skip already-posted meetings
 
-For each remaining meeting, check if `meeting.id` exists in `posted_meeting_ids` from config.
+Apply **two layers** of duplicate detection for each remaining meeting:
 
-If it does → skip silently.
-If it does not → this is a new, unposted client meeting. Continue to Step 5.
+**Layer 1 — Check local config (fast path):**
+Check if `meeting.id` exists in `posted_meeting_ids` from config.
+If it does → skip silently. Do not proceed to Layer 2.
+
+**Layer 2 — Search Slack channel for existing summaries (catches manually posted summaries):**
+If the meeting ID is NOT in `posted_meeting_ids`, it may still have been posted manually by a team member. Before posting, search Slack to verify.
+
+First, infer `ClientName` from participants: the external participant's company name (anyone with a domain different from `internal_domain`). If only one external person, use their full name. If multiple, infer from their email domain (e.g., `viapromeds.com` → `ViaproMeds`).
+
+Call `slack_search_public_and_private` with:
+```
+"Call Breakdown" "[ClientName]"
+```
+
+Also try a second search with the meeting title:
+```
+"[MeetingTitle]"
+```
+
+**Evaluate results:**
+- If any message contains `"Call Breakdown"` and references the client name → treat as already posted.
+- Immediately add `meeting.id` to `posted_meeting_ids` in config (same write-back as Step 7) so it won't be rechecked next cycle.
+- Skip silently.
+
+**If no matching message is found** → this is a genuinely new, unposted client meeting. Continue to Step 5.
 
 ---
 
@@ -92,36 +115,67 @@ Collect all matching `user_ids` across matched categories. If multiple tech type
 
 **6c. Generate summary body**
 
-Compose the full breakdown using the meeting data. Use the client meeting format:
+Compose a **full, detailed strategic brief** using the meeting data. This is NOT a quick recap — it must give someone who wasn't on the call a complete picture. Extract the maximum detail from all available fields: `summary`, `topics[]`, `chapter_summaries[]`, `action_items[]`, and `key_questions[]`.
+
+Use this format:
 
 ```
 <@USER_ID> <@USER_ID2>
 
 📋 *Call Breakdown — [ClientName]*
 
-[One concise paragraph: who the client is, what they're building or doing, what they need, key constraints or context.]
+*Who They Are*
+[2–4 sentences: who the client is, what their business does, their role, their technical sophistication, and relevant context about where they are in their journey. Be specific.]
 
-*Core Direction:*
-• [Key topic 1 — from topics[] or summary]
-• [Key topic 2]
-• [Key topic 3]
+*Context & Current State*
+[2–4 sentences: what tools or systems they currently use, what their workflow looks like today, and what is NOT working. Name specific tools and platforms.]
 
-*What Was Discussed:*
-• [Chapter title]: [1-sentence recap — from chapter_summaries[]]
-• [Chapter title]: [1-sentence recap]
-• [Chapter title]: [1-sentence recap]
+*Pain Points*
+[Number each pain point. Include a direct quote if available, plus 1–2 sentences on the operational impact. Minimum 3 pain points.]
+
+1. [Pain point title]
+"[Direct quote if available]"
+[Operational impact]
+
+2. [Pain point title]
+"[Direct quote if available]"
+[Operational impact]
+
+3. [Pain point title]
+[Explanation]
+
+*What Was Discussed*
+[One full sentence per chapter/topic — not just titles. Capture what was actually said, decided, or explored.]
+
+• [Topic]: [What was covered and what was decided or left open]
+• [Topic]: [What was covered and what was decided or left open]
+
+*Key Questions Raised*
+[Open questions, blockers, or unresolved items that still need answers.]
+
+• [Question or blocker]
+
+*Options / Directions Considered*
+[Only include if multiple approaches or scopes were discussed.]
+
+Option A — [Name]: [What it is, why it works, any risk]
+Option B — [Name]: [What it is, why it works, any risk]
+
+*Strategic Read*
+[1–3 sentences: honest read on this client — urgency, fit, what will win them, what could lose them. Make a clear recommendation.]
 
 🔴 *Action Items*
-• [Assignee first name]: [task — from action_items[]]
-• [Assignee first name]: [task]
+• [Assignee first name]: [specific task — no vague items]
+• [Assignee first name]: [specific task with deadline if mentioned]
 
 🔴 *Next Steps / Timeline*
-• [Any date-specific follow-up inferred from action_items or summary]
+• [Specific date or event]: [what happens, what is due]
+• [Specific date or event]: [follow-up or milestone]
 
 🔗 Full report: [report_url]
 ```
 
-If no tech type matched, omit the tag line entirely.
+If no tech type matched, omit the tag line at the top. Never write just one paragraph — all sections are required for client calls.
 
 **6c. Post parent message (headline)**
 
