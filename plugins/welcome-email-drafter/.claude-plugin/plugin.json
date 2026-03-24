@@ -1,0 +1,11 @@
+{
+  "name": "welcome-email-drafter",
+  "version": "0.1.0",
+  "description": "Drafts personalized welcome emails for new clients on behalf of Miguel Benavides at Singular Agency, with Gmail draft integration and Airtable client lookup.",
+  "author": {
+    "name": "Singular Agency",
+    "email": "as@singularagency.co"
+  },
+  "repository": "https://github.com/SingularAgency/claude-marketplace",
+  "license": "MIT"
+}
