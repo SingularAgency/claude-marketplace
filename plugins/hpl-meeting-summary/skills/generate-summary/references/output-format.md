@@ -70,48 +70,6 @@ Option C — [Name]: [What it is, why it might work, any risk or downside]
 
 ---
 
-## Compact Format — Internal Sync (3+ people, all same company)
-
-```
-🗒 *Sync Recap — [Meeting Title]*
-
-[2–3 sentences: what the meeting was about, what was resolved, and what is still open.]
-
-*Decisions Made:*
-• [Decision — be specific, not vague]
-• [Decision]
-
-*Action Items:*
-• [Assignee]: [task with deadline if known]
-• [Assignee]: [task]
-
-*Blockers / Pending:*
-• [Anything still unresolved, waiting on someone, or needing follow-up]
-
-🔗 Full report: [report_url]
-```
-
----
-
-## Minimal Format — One-on-One (2 people, same company)
-
-```
-📝 *[Meeting Title]*
-
-[1–2 sentences: what was discussed and what was agreed.]
-
-*Decisions:*
-• [Decision]
-
-*Action Items:*
-• [Assignee]: [task]
-• [Assignee]: [task]
-
-🔗 Full report: [report_url]
-```
-
----
-
 ## Critical Rules
 
 - **Never write just one paragraph for a client call.** If the meeting has external participants, use the Full Format with every section filled out.
@@ -124,16 +82,4 @@ Option C — [Name]: [What it is, why it might work, any risk or downside]
 - Never use filler phrases: "the team discussed", "it was mentioned", "moving forward", "as discussed"
 - Always write action items with the assignee's first name first
 
----
 
-## Meeting Type Detection
-
-| Signal | Format |
-|--------|--------|
-| External participant (different email domain) | Full (Sales/Client Call) |
-| All participants same company, 3+ people | Compact (Internal Sync) |
-| Only 2 participants, same company | Minimal (One-on-One) |
-| Folder labeled "Sales Strategy" or "Client" | Full (Sales/Client Call) |
-| No folder, internal only | Compact or Minimal |
-
-When in doubt, use the Full format.
