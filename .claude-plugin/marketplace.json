@@ -93,6 +93,18 @@
       },
       "license": "MIT",
       "category": "productivity"
+    },
+    {
+      "name": "morning-greeter",
+      "source": "./plugins/morning-greeter",
+      "description": "Sends a motivational morning greeting via Slack DM to Will, triggered on a schedule or on demand.",
+      "version": "0.1.0",
+      "author": {
+        "name": "Singular Agency",
+        "email": "as@singularagency.co"
+      },
+      "license": "MIT",
+      "category": "productivity"
     }
   ]
 }
