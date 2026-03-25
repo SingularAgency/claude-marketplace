@@ -1,0 +1,11 @@
+{
+  "name": "morning-greeter",
+  "version": "0.1.0",
+  "description": "Sends a motivational morning greeting via Slack DM to Will, triggered on a schedule or on demand.",
+  "author": {
+    "name": "Singular Agency",
+    "email": "as@singularagency.co"
+  },
+  "repository": "https://github.com/SingularAgency/claude-marketplace",
+  "license": "MIT"
+}
