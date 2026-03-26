@@ -1,0 +1,12 @@
+{
+  "name": "monthly-effort-tracker",
+  "version": "0.1.0",
+  "description": "Analyzes Google Calendar meetings for any month and generates an effort breakdown table by project, with automatic detection of new projects.",
+  "author": {
+    "name": "Singular Agency",
+    "email": "as@singularagency.co"
+  },
+  "repository": "https://github.com/SingularAgency/claude-marketplace",
+  "license": "MIT",
+  "keywords": ["calendar", "effort", "projects", "reporting", "productivity"]
+}
