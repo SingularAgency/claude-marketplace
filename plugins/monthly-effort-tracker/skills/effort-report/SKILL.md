@@ -25,13 +25,13 @@ If the response includes a `nextPageToken`, fetch subsequent pages until all eve
 Keep only events that meet ALL of these criteria:
 - `allDay` is false
 - `myResponseStatus` is NOT "declined"
-- The event title contains a recognizable project keyword (see Step 4)
+- The event is meeting-like and not clearly administrative/internal (project mapping and new-project detection both happen in Step 4 — do NOT filter by project keyword here)
 
 Exclude events that are clearly internal/administrative, such as: PO meetings, Accountability, Healthscore review, Plugins Workshop, personal appointments, birthday events, or generic syncs with no project name.
 
 ## Step 4 — Map events to projects
 
-For each event, match its title against known project keywords (case-insensitive). Use the following mapping logic:
+For each event, attempt to match its title against known project keywords (case-insensitive). Use the following mapping logic:
 
 - "Lunch Bunch" → Lunch Bunch
 - "ProDriven" or "Pro Driven" → ProDriven
@@ -48,7 +48,7 @@ For each event, match its title against known project keywords (case-insensitive
 - "Control" (only if followed by a client name or "Stand Up") → Control
 - "FiFutures" → FiFutures
 
-**Detecting new projects:** For events that don't match any known keyword, check if the title follows a pattern suggesting a project (e.g., contains "X Singular", "Interna", "Internal", "Sync", "Client Review", "Demo", "Onboarding", "Kick Off", "Sprint Planning"). If so, extract the likely project name from the title and add it as a new project marked with ⭐.
+**Detecting new projects:** For events that don't match any known keyword, check if the title follows a pattern suggesting a project meeting (e.g., contains "X Singular", "Interna", "Internal", "Sync", "Client Review", "Demo", "Onboarding", "Kick Off", "Sprint Planning"). If so, extract the likely project name from the title and add it as a new project marked with ⭐. Events that match neither a known project nor a meeting-like pattern are silently discarded.
 
 ## Step 5 — Count and calculate
 
@@ -63,8 +63,6 @@ Show the results as a markdown table with these columns:
 | ... | ... | ...% |
 
 Sort by number of meetings descending. Show the total row at the bottom. Mark new projects (not in the standard list) with ⭐.
-
-Include a brief note about any projects with 0 meetings that were present in prior months.
 
 ## Step 7 — Generate the Excel file
 
@@ -86,7 +84,7 @@ Create an `.xlsx` file at `/sessions/.../mnt/outputs/esfuerzo_<mes>_<año>.xlsx`
 
 Add a note below the table: `* Proyectos nuevos detectados en <mes> <año>`
 
-After saving, run `python scripts/recalc.py <file>` to recalculate formulas and verify zero errors.
+After saving, open the file with `openpyxl` in `data_only=False` mode and verify that column D contains formulas (not hardcoded values) as a basic correctness check.
 
 ## Step 8 — Share the file
 
