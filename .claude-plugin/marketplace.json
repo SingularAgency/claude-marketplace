@@ -93,6 +93,18 @@
       },
       "license": "MIT",
       "category": "productivity"
+    },
+    {
+      "name": "monthly-effort-tracker",
+      "source": "./plugins/monthly-effort-tracker",
+      "description": "Analyzes Google Calendar meetings for any month and generates an effort breakdown table by project, with automatic detection of new projects.",
+      "version": "0.1.0",
+      "author": {
+        "name": "Singular Agency",
+        "email": "as@singularagency.co"
+      },
+      "license": "MIT",
+      "category": "productivity"
     }
   ]
 }
