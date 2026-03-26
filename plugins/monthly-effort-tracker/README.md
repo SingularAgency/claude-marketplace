@@ -4,7 +4,7 @@ Analyzes your Google Calendar meetings for any month and generates a project eff
 
 ## Install
 
-```
+```bash
 /plugin install monthly-effort-tracker@singular-agency-marketplace
 ```
 
