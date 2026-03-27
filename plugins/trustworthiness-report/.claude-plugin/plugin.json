@@ -1,0 +1,9 @@
+{
+  "name": "trustworthiness-report",
+  "version": "0.1.0",
+  "description": "Generate evidence-based Trustworthiness Reports for talents by analyzing Read AI meeting transcripts across five evaluation criteria",
+  "author": {
+    "name": "Singular Agency"
+  },
+  "keywords": ["trustworthiness", "talent", "evaluation", "read-ai", "transcripts", "report"]
+}
