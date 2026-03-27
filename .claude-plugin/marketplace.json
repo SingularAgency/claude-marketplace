@@ -105,6 +105,18 @@
       },
       "license": "MIT",
       "category": "productivity"
+    },
+    {
+      "name": "calendar-automatcher",
+      "source": "./plugins/calendar-automatcher",
+      "description": "Encuentra y agenda autom\u00e1ticamente un sync t\u00e1ctico de 30 minutos entre PM, PO y Talento.",
+      "version": "0.1.0",
+      "author": {
+        "name": "Singular Agency",
+        "email": "as@singularagency.co"
+      },
+      "license": "MIT",
+      "category": "productivity"
     }
   ]
 }
