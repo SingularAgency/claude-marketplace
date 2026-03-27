@@ -1,0 +1,9 @@
+{
+  "name": "calendar-automatcher",
+  "version": "0.1.0",
+  "description": "Encuentra y agenda automáticamente un sync táctico de 30 minutos entre PM, PO y Talento en las próximas 48 horas.",
+  "author": {
+    "name": "Singular Agency"
+  },
+  "keywords": ["calendar", "scheduling", "gcal", "automatcher", "sync"]
+}
