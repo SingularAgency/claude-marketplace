@@ -10,27 +10,60 @@ metadata:
   version: "0.6.0"
 ---
 
-## IMPORTANT: Use Desktop Commander for ALL commands
+## Step 0 — Check Desktop Commander dependency
 
-ALL commands MUST run via Desktop Commander (`mcp__Desktop_Commander__start_process` with `shell: "bash"`). Do NOT use the VM Bash tool.
+**Desktop Commander is required** for this plugin. It allows Claude to run commands in your local environment (WSL2/terminal) where the Google scripts live.
+
+Check if Desktop Commander is available by attempting to use `mcp__Desktop_Commander__start_process`. If it IS available, proceed to Step 1.
+
+**If Desktop Commander is NOT available** (tool not found or not connected), show this wizard:
+
+---
+
+⚠️ **Desktop Commander requerido**
+
+Este plugin necesita **Desktop Commander** para funcionar — es una extensión que le permite a Claude ejecutar comandos directamente en tu computadora.
+
+**Cómo instalarlo:**
+
+1. Abre Claude Desktop
+2. Ve a **Settings → Extensions** (o **Configuración → Extensiones**)
+3. Busca **"Desktop Commander"** e instálalo
+4. Reinicia Claude Desktop
+5. Vuelve a este chat y di **"configurar multi-google"** para continuar
+
+> Si ya lo tienes instalado pero aparece este mensaje, asegúrate de que Desktop Commander esté **habilitado** en Settings → Extensions.
+
+---
+
+Stop here and do NOT proceed until the user confirms Desktop Commander is installed and active.
+
+---
 
 ## Step 1 — Check Python (via Desktop Commander)
+
+Run via `mcp__Desktop_Commander__start_process` with `shell: "bash"`:
 
 ```bash
 python3 --version
 ```
-Python 3.8+ required.
 
-## Step 2 — Install packages (via Desktop Commander)
+If Python is not found or version < 3.8, tell user:
+> "Necesitas Python 3.8 o superior. Descárgalo desde python.org e instálalo, luego di 'configurar multi-google' de nuevo."
+
+Stop if Python is missing.
+
+## Step 2 — Install Google packages (via Desktop Commander)
 
 ```bash
 python3 -m pip install google-auth google-auth-oauthlib google-api-python-client -q 2>&1 | tail -3
 ```
 
-If pip missing:
+If pip is missing:
 ```bash
 curl -sS https://bootstrap.pypa.io/get-pip.py | python3
 ```
+Then retry the install.
 
 Verify:
 ```bash
@@ -60,32 +93,37 @@ echo "{\"scripts_dir\": \"$HOME/.multi-google/scripts\"}" > ~/.multi-google/conf
 
 Check if credentials already exist:
 ```bash
-python3 -c "import os,json; p=os.path.expanduser('~/.multi-google/oauth.json'); print('EXISTS' if os.path.exists(p) else 'MISSING')"
+python3 -c "import os; p=os.path.expanduser('~/.multi-google/oauth.json'); print('EXISTS' if os.path.exists(p) else 'MISSING')"
 ```
 
 **If EXISTS → skip to Step 5.**
 
-**If MISSING → ask the user:**
+**If MISSING → show this to the user:**
 
-> Para conectar tus cuentas de Google necesitas crear un proyecto en Google Cloud. Solo toma 2 minutos:
+> Para conectar tus cuentas de Google necesitas crear credenciales de OAuth en Google Cloud. Solo toma 2 minutos:
 >
 > 1. Ve a **[console.cloud.google.com](https://console.cloud.google.com)** e inicia sesión
 > 2. Crea un proyecto nuevo (cualquier nombre, ej. `mi-claude-plugin`)
-> 3. En el menú izquierdo → **APIs y servicios → Biblioteca**
->    - Habilita: **Gmail API**, **Google Calendar API**, **Google Drive API**, **Google OAuth2 API**
+> 3. En el menú izquierdo → **APIs y servicios → Biblioteca** — habilita:
+>    - **Gmail API**
+>    - **Google Calendar API**
+>    - **Google Drive API**
+>    - **Google OAuth2 API**
 > 4. Ve a **APIs y servicios → Credenciales → Crear credenciales → ID de cliente de OAuth**
 >    - Tipo de aplicación: **Aplicación de escritorio**
 >    - Nombre: `claude-multi-google`
-> 5. Descarga el JSON haciendo clic en ⬇️ junto a tu credencial
-> 6. Abre el archivo descargado y copia todo su contenido aquí
+> 5. Descarga el JSON (botón ⬇️ junto a tu credencial recién creada)
+> 6. Abre el archivo y **pega todo su contenido aquí**
 
-Once the user pastes the JSON content, save it:
+Once the user pastes the JSON, save it via Desktop Commander:
+
 ```bash
 python3 -c "
-import json, os, sys
-raw = '''PASTE_JSON_HERE'''
+import json, os
+raw = r'''PASTE_JSON_HERE'''
 data = json.loads(raw)
 path = os.path.expanduser('~/.multi-google/oauth.json')
+os.makedirs(os.path.dirname(path), exist_ok=True)
 with open(path, 'w') as f:
     json.dump(data, f, indent=2)
 os.chmod(path, 0o600)
@@ -93,7 +131,7 @@ print('Credentials saved to', path)
 "
 ```
 
-Replace `PASTE_JSON_HERE` with the exact JSON the user pasted, then run the command.
+Replace `PASTE_JSON_HERE` with the exact JSON the user pasted, then run.
 
 ## Step 5 — Done! Show onboarding to user
 
