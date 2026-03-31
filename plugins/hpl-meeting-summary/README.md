@@ -52,7 +52,7 @@ The plugin generates three formats based on meeting type:
 
 ## Configuration file
 
-Settings are stored at `~/.read-ai-summary-config.json`:
+Settings are stored at `~/mnt/.read-ai-summary-config.json`:
 
 ```json
 {

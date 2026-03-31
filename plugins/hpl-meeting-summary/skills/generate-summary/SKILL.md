@@ -16,17 +16,9 @@ Fetch a meeting from Read AI, generate a structured summary, and post it to Slac
 
 ---
 
-## Step 0 — Connector pre-check and first-run check
+## Step 0 — First-run check
 
-**First, check connector availability** (do NOT call any tools yet — just verify they exist in your available tools scope):
-- `list_meetings` must be available (Read AI)
-- `slack_send_message` must be available (Slack)
-
-If either is missing, immediately tell the user which connector is not installed and stop — do not spin or wait.
-
-**Then, check the config file:**
-
-Read `~/.read-ai-summary-config.json` using Bash.
+Read `~/mnt/.read-ai-summary-config.json` using Bash.
 
 If the file does not exist OR `setup_complete` is not `true`:
 → Tell the user: "It looks like this is your first time using the meeting summary plugin. Let me run the setup first."
@@ -188,10 +180,10 @@ After both Slack messages are successfully posted, add the meeting ID to `posted
 ```bash
 python3 -c "
 import json
-with open('$HOME/.read-ai-summary-config.json', 'r') as f:
+with open('$HOME/mnt/.read-ai-summary-config.json', 'r') as f:
     config = json.load(f)
 config.setdefault('posted_meeting_ids', []).append('<MEETING_ID>')
-with open('$HOME/.read-ai-summary-config.json', 'w') as f:
+with open('$HOME/mnt/.read-ai-summary-config.json', 'w') as f:
     json.dump(config, f, indent=2)
 "
 ```

@@ -15,25 +15,7 @@ metadata:
 
 # Configure Meeting Summary Plugin
 
-Manage all preferences for how and where meeting summaries are posted. All settings are saved to `~/.read-ai-summary-config.json`.
-
----
-
-## Step 0 — First-run check
-
-Before doing anything else, check if the config file exists:
-
-```bash
-test -f ~/.read-ai-summary-config.json && echo "exists" || echo "missing"
-```
-
-**If missing:**
-→ Tell the user: "It looks like this plugin hasn't been set up yet on this computer. Let me run the initial setup first."
-→ Run the full `setup` skill flow before continuing here.
-
-**If exists:** continue to Step 1.
-
----
+Manage all preferences for how and where meeting summaries are posted. All settings are saved to `~/mnt/.read-ai-summary-config.json`.
 
 ## Config File Structure
 
@@ -79,7 +61,7 @@ test -f ~/.read-ai-summary-config.json && echo "exists" || echo "missing"
 
 ## Step 1 — Read current config
 
-Read `~/.read-ai-summary-config.json` using Bash. Display a clean summary of current settings:
+Read `~/mnt/.read-ai-summary-config.json` using Bash. Display a clean summary of current settings:
 
 ```
 📋 Current Configuration:
@@ -199,15 +181,15 @@ Display the full config in a readable format without making changes (same as Ste
 
 ## Step 3 — Save updated config
 
-Write the complete updated config back to `~/.read-ai-summary-config.json` using Python (to safely preserve all existing fields):
+Write the complete updated config back to `~/mnt/.read-ai-summary-config.json` using Python (to safely preserve all existing fields):
 
 ```bash
 python3 -c "
 import json
-with open('$HOME/.read-ai-summary-config.json', 'r') as f:
+with open('$HOME/mnt/.read-ai-summary-config.json', 'r') as f:
     config = json.load(f)
 # Apply changes here
-with open('$HOME/.read-ai-summary-config.json', 'w') as f:
+with open('$HOME/mnt/.read-ai-summary-config.json', 'w') as f:
     json.dump(config, f, indent=2)
 "
 ```

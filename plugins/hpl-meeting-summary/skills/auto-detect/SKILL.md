@@ -16,17 +16,9 @@ This skill runs silently on a schedule. It checks Read AI for newly completed me
 
 ---
 
-## Step 0 — Connector pre-check (silent)
-
-Before doing anything, verify that `list_meetings` and `slack_send_message` are available in your current tools scope. Do NOT call them — just check if they exist.
-
-If either is missing: exit silently. Do not say anything to the user.
-
----
-
 ## Step 1 — Load config
 
-Read `~/.read-ai-summary-config.json` using Bash.
+Read `~/mnt/.read-ai-summary-config.json` using Bash.
 
 Extract:
 - `default_channel` — where to post
@@ -213,10 +205,10 @@ Read the current config, append the new ID, and write back:
 ```bash
 python3 -c "
 import json, sys
-with open('$HOME/.read-ai-summary-config.json', 'r') as f:
+with open('$HOME/mnt/.read-ai-summary-config.json', 'r') as f:
     config = json.load(f)
 config.setdefault('posted_meeting_ids', []).append('<MEETING_ID>')
-with open('$HOME/.read-ai-summary-config.json', 'w') as f:
+with open('$HOME/mnt/.read-ai-summary-config.json', 'w') as f:
     json.dump(config, f, indent=2)
 "
 ```
