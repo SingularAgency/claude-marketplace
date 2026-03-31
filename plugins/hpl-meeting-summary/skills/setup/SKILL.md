@@ -16,31 +16,59 @@ Run this guided setup to verify all integrations are connected and configure whe
 
 ---
 
-## Step 1 — Check Read AI MCP connection
+## Step 0 — Connector pre-check (NO API calls yet)
 
-Attempt to call `list_meetings` with `limit: 1`.
+**Before making any tool calls**, check whether the required tools are available in your current session scope. Do this by inspecting your available tools list — do NOT call them yet.
 
-**If the tool is not available** (you get a "tool not found", "unknown tool", or similar error):
-→ Show the Read AI MCP installation guide from `references/readai-install-guide.md` and stop.
-→ Tell the user: "The Read AI integration is not connected yet. Follow the steps above to install it, then come back and say 'set up the meeting summary plugin' to continue."
+Required tools:
+- `list_meetings` → provided by the Read AI connector
+- `slack_send_message` → provided by the Slack connector
 
-**If the tool returns an authentication error** (unauthorized, invalid token):
-→ Tell the user: "Read AI is installed but not authenticated. Go to your Cowork plugin settings and add your Read AI API key, then try again."
+**If `list_meetings` is NOT in your available tools:**
+→ Do not attempt to call it. Do not wait or spin.
+→ Immediately show the contents of `references/readai-install-guide.md`.
+→ Tell the user:
 
-**If the tool returns data successfully**:
-→ Tell the user: "✅ Read AI is connected." and continue to Step 2.
+> "⚠️ The **Read AI** connector isn't connected yet on this computer. Follow the steps above to install it in Cowork, then come back and say *'set up the meeting summary plugin'* to continue."
+
+→ Stop here. Do not proceed to Step 1.
+
+**If `slack_send_message` is NOT in your available tools:**
+→ Do not attempt to call it. Do not wait or spin.
+→ Immediately show the contents of `references/slack-install-guide.md`.
+→ Tell the user:
+
+> "⚠️ The **Slack** connector isn't connected yet on this computer. Follow the steps above to install it in Cowork, then come back and say *'set up the meeting summary plugin'* to continue."
+
+→ Stop here. Do not proceed to Step 1.
+
+**If BOTH tools are available in scope:** tell the user:
+> "✅ Both connectors detected. Starting setup..."
+
+Then continue to Step 1.
 
 ---
 
-## Step 2 — Check Slack MCP connection
+## Step 1 — Verify Read AI connection is working
 
-Check whether `slack_send_message` is available as a tool in scope.
+Now that `list_meetings` is confirmed available, call it with `limit: 1` to verify it actually works.
 
-**If not available**:
-→ Show the Slack install guide from `references/slack-install-guide.md` and stop.
-→ Tell the user: "Slack is not connected yet. Follow the steps above to install it, then come back to finish setup."
+**If the call returns an authentication error** (unauthorized, invalid token, 401):
+→ Tell the user: "Read AI is installed but not authenticated. Go to Cowork → Settings → Plugins & Connectors, disconnect and reconnect Read AI, then try again."
+→ Stop here.
 
-**If available**:
+**If the call hangs or times out** (no response after a reasonable wait):
+→ Tell the user: "Read AI is connected but not responding. Try disconnecting and reconnecting it in Cowork → Settings → Plugins & Connectors, then restart Cowork and try again."
+→ Stop here.
+
+**If the call returns data successfully:**
+→ Tell the user: "✅ Read AI is connected and responding." and continue to Step 2.
+
+---
+
+## Step 2 — Verify Slack connection is working
+
+`slack_send_message` is already confirmed available from Step 0.
 → Tell the user: "✅ Slack is connected." and continue to Step 3.
 
 ---

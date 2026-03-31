@@ -16,7 +16,15 @@ Fetch a meeting from Read AI, generate a structured summary, and post it to Slac
 
 ---
 
-## Step 0 — First-run check
+## Step 0 — Connector pre-check and first-run check
+
+**First, check connector availability** (do NOT call any tools yet — just verify they exist in your available tools scope):
+- `list_meetings` must be available (Read AI)
+- `slack_send_message` must be available (Slack)
+
+If either is missing, immediately tell the user which connector is not installed and stop — do not spin or wait.
+
+**Then, check the config file:**
 
 Read `~/.read-ai-summary-config.json` using Bash.
 
