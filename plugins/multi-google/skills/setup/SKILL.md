@@ -31,35 +31,30 @@ If pip missing:
 ```bash
 curl -sS https://bootstrap.pypa.io/get-pip.py | python3
 ```
-Then retry pip install.
 
 Verify:
 ```bash
 python3 -c "from google_auth_oauthlib.flow import InstalledAppFlow; print('OK')"
 ```
 
-## Step 3 — Copy scripts to WSL2 native filesystem (via Desktop Commander)
-
-The scripts must live on WSL2's native filesystem (not the Windows NTFS mount) to avoid Python import conflicts.
+## Step 3 — Copy scripts + write OAuth config (via Desktop Commander)
 
 ```bash
 mkdir -p ~/.multi-google/scripts ~/.multi-google/accounts
 
-# Find where plugin scripts are installed and copy them
 PLUGIN_SCRIPTS=$(find /mnt/c/Users -path "*/remote-plugins/plugin_011*/scripts" 2>/dev/null | head -1)
 if [ -z "$PLUGIN_SCRIPTS" ]; then
-  echo "ERROR: Could not find installed plugin scripts. Is the plugin installed?"
+  echo "ERROR: Plugin scripts not found. Is the plugin installed?"
 else
   cp "$PLUGIN_SCRIPTS"/*.py ~/.multi-google/scripts/
-  echo "Scripts copied to ~/.multi-google/scripts/"
-  ls ~/.multi-google/scripts/
+  echo "Scripts copied:" && ls ~/.multi-google/scripts/
 fi
 ```
 
-Write config:
+Write config and OAuth credentials:
 ```bash
 echo "{\"scripts_dir\": \"$HOME/.multi-google/scripts\"}" > ~/.multi-google/config.json
-cat ~/.multi-google/config.json
+python3 ~/.multi-google/scripts/setup_oauth.py
 ```
 
 ## Step 4 — Done! Show onboarding to user
