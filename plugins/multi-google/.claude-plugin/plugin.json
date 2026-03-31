@@ -1,0 +1,7 @@
+{
+  "name": "multi-google",
+  "version": "0.6.0",
+  "description": "Full Google Workspace assistant across multiple accounts. Gmail, Calendar, Drive — one Google Sign-In per account, no configuration needed. Credentials bundled.",
+  "author": { "name": "Singular Agency" },
+  "keywords": ["gmail", "calendar", "drive", "google", "workspace", "multi-account"]
+}

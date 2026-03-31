@@ -5,7 +5,7 @@
     "email": "as@singularagency.co"
   },
   "metadata": {
-    "description": "Official Claude Code plugin marketplace for Singular Agency \u2014 productivity tools, AI utilities, and workflow automation for our team.",
+    "description": "Official Claude Code plugin marketplace for Singular Agency — productivity tools, AI utilities, and workflow automation for our team.",
     "version": "1.0.0",
     "pluginRoot": "./plugins"
   },
@@ -33,7 +33,7 @@
     {
       "name": "plugin-creator",
       "source": "./plugins/plugin-creator",
-      "description": "Guides team members through creating a new plugin and submitting it as a PR. Works on macOS, Linux and Windows via Python3 \u2014 no Docker required.",
+      "description": "Guides team members through creating a new plugin and submitting it as a PR. Works on macOS, Linux and Windows via Python3 — no Docker required.",
       "version": "0.3.0",
       "author": {
         "name": "Singular Agency",
@@ -85,7 +85,7 @@
     {
       "name": "hpl-meeting-summary",
       "source": "./plugins/hpl-meeting-summary",
-      "description": "Automatically generates structured meeting summaries from Read AI and posts them to Slack \u2014 with client context, action items, next steps, and smart team tagging by technology type.",
+      "description": "Automatically generates structured meeting summaries from Read AI and posts them to Slack — with client context, action items, next steps, and smart team tagging by technology type.",
       "version": "0.1.0",
       "author": {
         "name": "Singular Agency",
@@ -109,7 +109,7 @@
     {
       "name": "calendar-automatcher",
       "source": "./plugins/calendar-automatcher",
-      "description": "Encuentra y agenda autom\u00e1ticamente un sync t\u00e1ctico de 30 minutos entre PM, PO y Talento.",
+      "description": "Encuentra y agenda automáticamente un sync táctico de 30 minutos entre PM, PO y Talento.",
       "version": "0.1.0",
       "author": {
         "name": "Singular Agency",
@@ -128,6 +128,27 @@
         "email": "as@singularagency.co"
       },
       "license": "MIT",
+      "category": "productivity"
+    },
+    {
+      "name": "multi-google",
+      "source": "./plugins/multi-google",
+      "description": "Full Google Workspace assistant across multiple accounts. Gmail, Calendar, Drive — one Google Sign-In per account, no configuration needed.",
+      "version": "0.6.0",
+      "author": {
+        "name": "Singular Agency",
+        "email": "as@singularagency.co"
+      },
+      "repository": "https://github.com/SingularAgency/claude-marketplace",
+      "license": "MIT",
+      "keywords": [
+        "gmail",
+        "calendar",
+        "drive",
+        "google",
+        "workspace",
+        "multi-account"
+      ],
       "category": "productivity"
     }
   ]
