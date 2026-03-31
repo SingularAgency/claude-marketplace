@@ -37,7 +37,7 @@ Verify:
 python3 -c "from google_auth_oauthlib.flow import InstalledAppFlow; print('OK')"
 ```
 
-## Step 3 — Copy scripts + write OAuth config (via Desktop Commander)
+## Step 3 — Copy scripts to WSL2 native filesystem (via Desktop Commander)
 
 ```bash
 mkdir -p ~/.multi-google/scripts ~/.multi-google/accounts
@@ -51,13 +51,51 @@ else
 fi
 ```
 
-Write config and OAuth credentials:
+Write config:
 ```bash
 echo "{\"scripts_dir\": \"$HOME/.multi-google/scripts\"}" > ~/.multi-google/config.json
-python3 ~/.multi-google/scripts/setup_oauth.py
 ```
 
-## Step 4 — Done! Show onboarding to user
+## Step 4 — Google OAuth credentials
+
+Check if credentials already exist:
+```bash
+python3 -c "import os,json; p=os.path.expanduser('~/.multi-google/oauth.json'); print('EXISTS' if os.path.exists(p) else 'MISSING')"
+```
+
+**If EXISTS → skip to Step 5.**
+
+**If MISSING → ask the user:**
+
+> Para conectar tus cuentas de Google necesitas crear un proyecto en Google Cloud. Solo toma 2 minutos:
+>
+> 1. Ve a **[console.cloud.google.com](https://console.cloud.google.com)** e inicia sesión
+> 2. Crea un proyecto nuevo (cualquier nombre, ej. `mi-claude-plugin`)
+> 3. En el menú izquierdo → **APIs y servicios → Biblioteca**
+>    - Habilita: **Gmail API**, **Google Calendar API**, **Google Drive API**, **Google OAuth2 API**
+> 4. Ve a **APIs y servicios → Credenciales → Crear credenciales → ID de cliente de OAuth**
+>    - Tipo de aplicación: **Aplicación de escritorio**
+>    - Nombre: `claude-multi-google`
+> 5. Descarga el JSON haciendo clic en ⬇️ junto a tu credencial
+> 6. Abre el archivo descargado y copia todo su contenido aquí
+
+Once the user pastes the JSON content, save it:
+```bash
+python3 -c "
+import json, os, sys
+raw = '''PASTE_JSON_HERE'''
+data = json.loads(raw)
+path = os.path.expanduser('~/.multi-google/oauth.json')
+with open(path, 'w') as f:
+    json.dump(data, f, indent=2)
+os.chmod(path, 0o600)
+print('Credentials saved to', path)
+"
+```
+
+Replace `PASTE_JSON_HERE` with the exact JSON the user pasted, then run the command.
+
+## Step 5 — Done! Show onboarding to user
 
 Once setup completes successfully, show this welcome message **exactly as formatted below**:
 
