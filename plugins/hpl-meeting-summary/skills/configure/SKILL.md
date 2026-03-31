@@ -17,6 +17,24 @@ metadata:
 
 Manage all preferences for how and where meeting summaries are posted. All settings are saved to `~/.read-ai-summary-config.json`.
 
+---
+
+## Step 0 — First-run check
+
+Before doing anything else, check if the config file exists:
+
+```bash
+test -f ~/.read-ai-summary-config.json && echo "exists" || echo "missing"
+```
+
+**If missing:**
+→ Tell the user: "It looks like this plugin hasn't been set up yet on this computer. Let me run the initial setup first."
+→ Run the full `setup` skill flow before continuing here.
+
+**If exists:** continue to Step 1.
+
+---
+
 ## Config File Structure
 
 ```json

@@ -40,7 +40,13 @@ start_datetime_gte: <2 hours ago in ISO 8601>
 expand: ["summary", "action_items", "key_questions", "topics", "chapter_summaries"]
 ```
 
-To compute "2 hours ago": use `date -u -d '2 hours ago' '+%Y-%m-%dT%H:%M:%SZ'` via Bash.
+To compute "2 hours ago", use Python (works on macOS, Linux, and Windows):
+
+```bash
+python3 -c "from datetime import datetime, timedelta, timezone; print((datetime.now(timezone.utc) - timedelta(hours=2)).strftime('%Y-%m-%dT%H:%M:%SZ'))"
+```
+
+Do NOT use `date -d` (Linux-only). Do NOT use `date -v` (macOS-only). Always use the Python command above.
 
 ---
 
