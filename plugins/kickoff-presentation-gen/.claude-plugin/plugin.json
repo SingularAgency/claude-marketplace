@@ -1,0 +1,12 @@
+{
+  "name": "kickoff-presentation-gen",
+  "version": "0.1.0",
+  "description": "Generate client kickoff presentations in Gamma using ReadAI meeting context, strategic OKRs, and Singular's standard template.",
+  "author": {
+    "name": "Singular Agency",
+    "email": "as@singularagency.co"
+  },
+  "repository": "https://github.com/SingularAgency/claude-marketplace",
+  "license": "MIT",
+  "keywords": ["kickoff", "presentation", "gamma", "okr", "singular"]
+}
