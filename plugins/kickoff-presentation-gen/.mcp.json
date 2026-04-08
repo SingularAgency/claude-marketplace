@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "Gamma": {
+      "type": "http",
+      "url": "https://mcp.gamma.app/mcp"
+    },
+    "Read AI": {
+      "type": "http",
+      "url": "https://readai-mcp-server-production.up.railway.app/mcp"
+    }
+  }
+}
