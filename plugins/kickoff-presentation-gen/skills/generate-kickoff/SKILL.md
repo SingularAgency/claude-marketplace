@@ -75,7 +75,7 @@ Use the Gamma `generate` tool with the following parameters:
 
 Read `references/template-structure.md` for the exact slide-by-slide content structure. The `inputText` must follow that template precisely, substituting the project name, OKRs, and next steps.
 
-Always save to the "Kickoff Meetings" Gamma folder. Use `get_folders` with name "Kickoff" to find the folder ID.
+Always save to the "Kickoff Meetings" Gamma folder. Use `get_folders` with name "Kickoff Meetings" to find the folder ID.
 
 Include in `additionalInstructions`:
 - Dark, professional color scheme with subtle gradient accents
