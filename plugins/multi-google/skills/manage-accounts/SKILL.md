@@ -8,10 +8,41 @@ description: >
   "update services for an account", "change account permissions",
   or any phrase about adding, removing, listing, or updating Google accounts.
 metadata:
-  version: "0.6.0"
+  version: "0.7.0"
 ---
 
 ## IMPORTANT: Use VM Bash tool for ALL commands — NO Desktop Commander needed.
+
+## Step 0 — Auto-bootstrap (run FIRST, every time)
+
+Run this single block unconditionally before anything else. It handles fresh sessions and new installs automatically:
+
+```bash
+MNT=$(ls -d /sessions/*/mnt 2>/dev/null | head -1)
+
+# Find the plugin's scripts directory (works regardless of plugin ID)
+PLUGIN_SCRIPTS=$(find /sessions/*/mnt/.remote-plugins/*/scripts -name "setup_oauth.py" 2>/dev/null | head -1 | xargs -I{} dirname {})
+
+if [ -z "$PLUGIN_SCRIPTS" ]; then
+  echo "ERROR: Plugin scripts not found. Is multi-google installed?"
+  exit 1
+fi
+
+# Copy scripts to persistent mnt if missing
+if [ ! -f "$MNT/.multi-google/scripts/auth.py" ]; then
+  echo "First run — copying scripts..."
+  mkdir -p "$MNT/.multi-google/scripts" "$MNT/.multi-google/accounts"
+  cp "$PLUGIN_SCRIPTS"/*.py "$MNT/.multi-google/scripts/"
+fi
+
+# Generate oauth.json if missing
+if [ ! -f "$MNT/.multi-google/oauth.json" ]; then
+  echo "Setting up credentials..."
+  python3 "$MNT/.multi-google/scripts/setup_oauth.py"
+fi
+
+echo "Bootstrap OK."
+```
 
 ## List accounts
 
@@ -33,18 +64,18 @@ MNT=$(ls -d /sessions/*/mnt 2>/dev/null | head -1)
 python3 "$MNT/.multi-google/scripts/auth.py" <alias> <service1> [service2] [service3] 2>&1
 ```
 
-4. Look for `AUTH_URL:` in the output. Copy everything after `AUTH_URL:` and show the user:
+4. Look for `AUTH_URL:` in the output. Show the user the link and tell them:
 
-> "Abre este link en tu navegador y inicia sesión con la cuenta de Google que quieres conectar. Después de aceptar los permisos, el navegador intentará abrir `http://localhost` y mostrará un error — **eso es normal**. Copia la URL completa de esa página de error y pégala aquí."
+> "Abre este link en tu navegador e inicia sesión con la cuenta de Google que quieres conectar. Después de aceptar los permisos verás una página de éxito con un botón **'Copy URL'** — haz click en ese botón y pega la URL aquí."
 
-5. Once the user pastes the redirect URL (starts with `http://localhost?code=...`), run Phase 2:
+5. Once the user pastes the redirect URL, run Phase 2:
 
 ```bash
 MNT=$(ls -d /sessions/*/mnt 2>/dev/null | head -1)
 python3 "$MNT/.multi-google/scripts/auth.py" <alias> --finish "<redirect_url>" 2>&1
 ```
 
-6. Look for `{"success": true, ...}` in the output. Show the detected email and connected services.
+6. Look for `{"success": true, ...}`. Show detected email and services.
 
 7. Show updated account list:
 ```bash
