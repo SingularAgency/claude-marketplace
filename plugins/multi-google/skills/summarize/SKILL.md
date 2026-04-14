@@ -11,38 +11,40 @@ metadata:
   version: "0.6.0"
 ---
 
-## IMPORTANT: Use Desktop Commander for ALL commands
+## IMPORTANT: Use VM Bash tool for ALL commands — NO Desktop Commander needed.
 
-ALL commands MUST run via Desktop Commander (`mcp__Desktop_Commander__start_process` with `shell: "bash"`). Do NOT use the VM Bash tool.
-
-## Step 1 — Load accounts (via Desktop Commander)
+## Step 1 — Load accounts
 
 ```bash
-python3 ~/.multi-google/scripts/list_accounts.py
+MNT=$(ls -d /sessions/*/mnt 2>/dev/null | head -1)
+python3 "$MNT/.multi-google/scripts/list_accounts.py"
 ```
 
-If config missing → tell user: "Di 'configurar multi-google' primero."
+If this fails → tell user: "Di 'configurar multi-google' primero."
 
 ## Step 2 — Time window
 
 Default: last 7 days email/drive, next 7 days + yesterday for calendar.
 Honor user intent: "today" = 1d, "last 3 days" = 3d, etc.
 
-## Step 3 — Fetch per account (all via Desktop Commander)
+## Step 3 — Fetch per account
 
 **Gmail:**
 ```bash
-python3 ~/.multi-google/scripts/gmail.py <alias> search "newer_than:7d -category:promotions -category:social -category:updates" 30
+MNT=$(ls -d /sessions/*/mnt 2>/dev/null | head -1)
+python3 "$MNT/.multi-google/scripts/gmail.py" <alias> search "newer_than:7d -category:promotions -category:social -category:updates" 30
 ```
 
 **Calendar:**
 ```bash
-python3 ~/.multi-google/scripts/gcalendar.py <alias> list 7 1
+MNT=$(ls -d /sessions/*/mnt 2>/dev/null | head -1)
+python3 "$MNT/.multi-google/scripts/gcalendar.py" <alias> list 7 1
 ```
 
 **Drive:**
 ```bash
-python3 ~/.multi-google/scripts/drive.py <alias> recent 7 20
+MNT=$(ls -d /sessions/*/mnt 2>/dev/null | head -1)
+python3 "$MNT/.multi-google/scripts/drive.py" <alias> recent 7 20
 ```
 
 ## Step 4 — Filter and deliver
