@@ -14,74 +14,80 @@ metadata:
   version: "0.6.0"
 ---
 
-## IMPORTANT: Use Desktop Commander for ALL commands
+## IMPORTANT: Use VM Bash tool for ALL commands — NO Desktop Commander needed.
 
-ALL commands MUST run via Desktop Commander (`mcp__Desktop_Commander__start_process` with `shell: "bash"`). Do NOT use the VM Bash tool. The config and scripts live in the WSL2 environment.
-
-## Step 1 — Verify config (via Desktop Commander)
+## Step 1 — Verify setup
 
 ```bash
-python3 -c "import json,os; print(json.load(open(os.path.expanduser('~/.multi-google/config.json')))['scripts_dir'])"
+MNT=$(ls -d /sessions/*/mnt 2>/dev/null | head -1)
+python3 "$MNT/.multi-google/scripts/list_accounts.py"
 ```
 
 If this fails → tell user: "Di 'configurar multi-google' primero."
 
-If no account specified, list accounts:
-```bash
-python3 ~/.multi-google/scripts/list_accounts.py
-```
+If no account specified and multiple exist, ask which one to use. With a single account, use it automatically.
 
-## Commands (all via Desktop Commander)
+## Commands
 
 ### Recent files
 ```bash
-python3 ~/.multi-google/scripts/drive.py <alias> recent [days] [max]
+MNT=$(ls -d /sessions/*/mnt 2>/dev/null | head -1)
+python3 "$MNT/.multi-google/scripts/drive.py" <alias> recent [days] [max]
 ```
 
 ### Search files
 ```bash
-python3 ~/.multi-google/scripts/drive.py <alias> search "<query>" [max]
+MNT=$(ls -d /sessions/*/mnt 2>/dev/null | head -1)
+python3 "$MNT/.multi-google/scripts/drive.py" <alias> search "<query>" [max]
 ```
 
 ### Get file metadata
 ```bash
-python3 ~/.multi-google/scripts/drive.py <alias> get <file_id>
+MNT=$(ls -d /sessions/*/mnt 2>/dev/null | head -1)
+python3 "$MNT/.multi-google/scripts/drive.py" <alias> get <file_id>
 ```
 
 ### Read file content (Docs/Sheets/Slides)
 ```bash
-python3 ~/.multi-google/scripts/drive.py <alias> read <file_id>
+MNT=$(ls -d /sessions/*/mnt 2>/dev/null | head -1)
+python3 "$MNT/.multi-google/scripts/drive.py" <alias> read <file_id>
 ```
 
 ### Share file
 ```bash
-python3 ~/.multi-google/scripts/drive.py <alias> share <file_id> <email> [role]
+MNT=$(ls -d /sessions/*/mnt 2>/dev/null | head -1)
+python3 "$MNT/.multi-google/scripts/drive.py" <alias> share <file_id> <email> [role]
 ```
 Role: `reader` (default), `writer`, `commenter`
 
 ### Unshare
 ```bash
-python3 ~/.multi-google/scripts/drive.py <alias> unshare <file_id> <email>
+MNT=$(ls -d /sessions/*/mnt 2>/dev/null | head -1)
+python3 "$MNT/.multi-google/scripts/drive.py" <alias> unshare <file_id> <email>
 ```
 
 ### Move file
 ```bash
-python3 ~/.multi-google/scripts/drive.py <alias> move <file_id> <folder_id>
+MNT=$(ls -d /sessions/*/mnt 2>/dev/null | head -1)
+python3 "$MNT/.multi-google/scripts/drive.py" <alias> move <file_id> <folder_id>
 ```
 
 ### Create folder
 ```bash
-python3 ~/.multi-google/scripts/drive.py <alias> create_folder "<name>" [parent_folder_id]
+MNT=$(ls -d /sessions/*/mnt 2>/dev/null | head -1)
+python3 "$MNT/.multi-google/scripts/drive.py" <alias> create_folder "<name>" [parent_folder_id]
 ```
 
 ### Upload file
 ```bash
-python3 ~/.multi-google/scripts/drive.py <alias> upload <local_path> [parent_folder_id]
+MNT=$(ls -d /sessions/*/mnt 2>/dev/null | head -1)
+python3 "$MNT/.multi-google/scripts/drive.py" <alias> upload <local_path> [parent_folder_id]
 ```
 
 ### List folder
 ```bash
-python3 ~/.multi-google/scripts/drive.py <alias> list_folder [folder_id]
+MNT=$(ls -d /sessions/*/mnt 2>/dev/null | head -1)
+python3 "$MNT/.multi-google/scripts/drive.py" <alias> list_folder [folder_id]
 ```
 
 ## Guidelines
