@@ -3,6 +3,8 @@
 Google OAuth2 authentication for multi-google plugin.
 Works without Desktop Commander — runs entirely from the Cowork VM.
 
+Supports both "web" and "installed" OAuth client types.
+
 Usage:
   Phase 1 — Start auth:
     python3 auth.py <alias> <service1> [service2...]
@@ -20,6 +22,8 @@ for _sp in _glob.glob(_os.path.expanduser('~/.local/lib/python3*/site-packages')
         _sys.path.insert(0, _sp)
 
 import json, os, sys, tempfile, glob, urllib.parse
+
+REDIRECT_URI = "https://singularagency.github.io/claude-marketplace/oauth-callback/"
 
 def _find_data_dir():
     """Find or create the persistent data directory.
@@ -57,26 +61,34 @@ def _load_oauth():
     with open(path) as f:
         return json.load(f)
 
+def _make_flow(creds_data, scopes):
+    """Create a Flow that works with both 'web' and 'installed' credential types."""
+    try:
+        from google_auth_oauthlib.flow import Flow, InstalledAppFlow
+    except ImportError:
+        print(json.dumps({"error": "Run: pip install google-auth google-auth-oauthlib google-api-python-client"}))
+        sys.exit(1)
+
+    tmp = tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False)
+    json.dump(creds_data, tmp); tmp.close()
+
+    cred_type = list(creds_data.keys())[0]  # "web" or "installed"
+    if cred_type == "web":
+        flow = Flow.from_client_secrets_file(tmp.name, scopes=scopes)
+    else:
+        flow = InstalledAppFlow.from_client_secrets_file(tmp.name, scopes=scopes)
+
+    os.unlink(tmp.name)
+    return flow
+
 def phase1_start(alias, services):
     """Generate the OAuth URL and save pending state."""
     scopes = ["openid", "https://www.googleapis.com/auth/userinfo.email"]
     for svc in services:
         scopes.extend(SCOPES_MAP.get(svc, []))
 
-    try:
-        from google_auth_oauthlib.flow import InstalledAppFlow
-    except ImportError:
-        print(json.dumps({"error": "Run: pip install google-auth google-auth-oauthlib google-api-python-client"}))
-        sys.exit(1)
-
     creds_data = _load_oauth()
-    tmp = tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False)
-    json.dump(creds_data, tmp); tmp.close()
-
-    flow = InstalledAppFlow.from_client_secrets_file(tmp.name, scopes=scopes)
-    os.unlink(tmp.name)
-
-    REDIRECT_URI = "https://singularagency.github.io/claude-marketplace/oauth-callback/"
+    flow = _make_flow(creds_data, scopes)
     flow.redirect_uri = REDIRECT_URI
     auth_url, state = flow.authorization_url(prompt='consent', access_type='offline')
 
@@ -119,19 +131,13 @@ def phase2_finish(alias, code_or_url):
     scopes   = pending['scopes']
 
     try:
-        from google_auth_oauthlib.flow import InstalledAppFlow
         from googleapiclient.discovery import build
     except ImportError:
         print(json.dumps({"error": "Run: pip install google-auth google-auth-oauthlib google-api-python-client"}))
         sys.exit(1)
 
     creds_data = _load_oauth()
-    tmp = tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False)
-    json.dump(creds_data, tmp); tmp.close()
-
-    flow = InstalledAppFlow.from_client_secrets_file(tmp.name, scopes=scopes)
-    os.unlink(tmp.name)
-
+    flow = _make_flow(creds_data, scopes)
     flow.redirect_uri = pending['redirect_uri']
     if pending.get('code_verifier'):
         flow.code_verifier = pending['code_verifier']
