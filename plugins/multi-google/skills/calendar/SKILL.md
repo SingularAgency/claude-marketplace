@@ -14,72 +14,77 @@ metadata:
   version: "0.6.0"
 ---
 
-## IMPORTANT: Use Desktop Commander for ALL commands
+## IMPORTANT: Use VM Bash tool for ALL commands — NO Desktop Commander needed.
 
-ALL commands MUST run via Desktop Commander (`mcp__Desktop_Commander__start_process` with `shell: "bash"`). Do NOT use the VM Bash tool. The config and scripts live in the WSL2 environment.
-
-## Step 1 — Verify config (via Desktop Commander)
+## Step 1 — Verify setup
 
 ```bash
-python3 -c "import json,os; print(json.load(open(os.path.expanduser('~/.multi-google/config.json')))['scripts_dir'])"
+MNT=$(ls -d /sessions/*/mnt 2>/dev/null | head -1)
+python3 "$MNT/.multi-google/scripts/list_accounts.py"
 ```
 
 If this fails → tell user: "Di 'configurar multi-google' primero."
 
-If no account specified, list accounts:
-```bash
-python3 ~/.multi-google/scripts/list_accounts.py
-```
+If no account specified and multiple exist, ask which one to use. With a single account, use it automatically.
 
-## Commands (all via Desktop Commander)
+## Commands
 
 ### List upcoming events
 ```bash
-python3 ~/.multi-google/scripts/gcalendar.py <alias> list [days_ahead] [days_behind]
+MNT=$(ls -d /sessions/*/mnt 2>/dev/null | head -1)
+python3 "$MNT/.multi-google/scripts/gcalendar.py" <alias> list [days_ahead] [days_behind]
 ```
 Default: next 7 days + yesterday. Fields: `id, title, start, end, location, attendees, organizer, my_status, meet_link, is_all_day, recurring`
 
 ### Search events
 ```bash
-python3 ~/.multi-google/scripts/gcalendar.py <alias> search "<query>"
+MNT=$(ls -d /sessions/*/mnt 2>/dev/null | head -1)
+python3 "$MNT/.multi-google/scripts/gcalendar.py" <alias> search "<query>"
 ```
 
 ### Get event
 ```bash
-python3 ~/.multi-google/scripts/gcalendar.py <alias> get <event_id>
+MNT=$(ls -d /sessions/*/mnt 2>/dev/null | head -1)
+python3 "$MNT/.multi-google/scripts/gcalendar.py" <alias> get <event_id>
 ```
 
 ### Create event
 ```bash
-python3 ~/.multi-google/scripts/gcalendar.py <alias> create "<title>" "<start_iso>" "<end_iso>" ["<attendees_csv>"] ["<description>"] ["<location>"]
+MNT=$(ls -d /sessions/*/mnt 2>/dev/null | head -1)
+python3 "$MNT/.multi-google/scripts/gcalendar.py" <alias> create "<title>" "<start_iso>" "<end_iso>" ["<attendees_csv>"] ["<description>"] ["<location>"]
 ```
 Date format: `2026-04-01T14:00:00`. Confirm with user before creating.
 
 ### Update event
 ```bash
-python3 ~/.multi-google/scripts/gcalendar.py <alias> update <event_id> ["<title>"] ["<start_iso>"] ["<end_iso>"] ["<description>"] ["<location>"]
+MNT=$(ls -d /sessions/*/mnt 2>/dev/null | head -1)
+python3 "$MNT/.multi-google/scripts/gcalendar.py" <alias> update <event_id> ["<title>"] ["<start_iso>"] ["<end_iso>"] ["<description>"] ["<location>"]
 ```
 Use `""` for fields you don't want to change. Confirm before updating.
 
 ### Delete event
 ```bash
-python3 ~/.multi-google/scripts/gcalendar.py <alias> delete <event_id>
+MNT=$(ls -d /sessions/*/mnt 2>/dev/null | head -1)
+python3 "$MNT/.multi-google/scripts/gcalendar.py" <alias> delete <event_id>
 ```
 Confirm before deleting.
 
 ### RSVP
 ```bash
-python3 ~/.multi-google/scripts/gcalendar.py <alias> rsvp <event_id> <accept|decline|tentative>
+MNT=$(ls -d /sessions/*/mnt 2>/dev/null | head -1)
+python3 "$MNT/.multi-google/scripts/gcalendar.py" <alias> rsvp <event_id> <accept|decline|tentative>
 ```
 
 ### Find free slots
 ```bash
-python3 ~/.multi-google/scripts/gcalendar.py <alias> free_slots <date_iso> [duration_minutes]
+MNT=$(ls -d /sessions/*/mnt 2>/dev/null | head -1)
+python3 "$MNT/.multi-google/scripts/gcalendar.py" <alias> free_slots <date_iso> [duration_minutes]
 ```
 
 ### List calendars
 ```bash
-python3 ~/.multi-google/scripts/gcalendar.py <alias> calendars
+MNT=$(ls -d /sessions/*/mnt 2>/dev/null | head -1)
+python3 "$MNT/.multi-google/scripts/gcalendar.py" <alias> calendars
 ```
 
 ## Guidelines
