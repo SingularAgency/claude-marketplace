@@ -10,19 +10,35 @@ description: >
   "find all emails about [project]", "buscar emails de [persona]",
   "mandar un email a [persona]", or any request to act on Gmail.
 metadata:
-  version: "0.6.0"
+  version: "0.7.0"
 ---
 
 ## IMPORTANT: Use VM Bash tool for ALL commands — NO Desktop Commander needed.
 
-## Step 1 — Verify setup
+## Step 0 — Auto-bootstrap (run FIRST, every time)
+
+```bash
+MNT=$(ls -d /sessions/*/mnt 2>/dev/null | head -1)
+PLUGIN_SCRIPTS=$(find /sessions/*/mnt/.remote-plugins/*/scripts -name "setup_oauth.py" 2>/dev/null | head -1 | xargs -I{} dirname {})
+
+if [ ! -f "$MNT/.multi-google/scripts/auth.py" ]; then
+  mkdir -p "$MNT/.multi-google/scripts" "$MNT/.multi-google/accounts"
+  cp "$PLUGIN_SCRIPTS"/*.py "$MNT/.multi-google/scripts/"
+fi
+
+if [ ! -f "$MNT/.multi-google/oauth.json" ]; then
+  python3 "$MNT/.multi-google/scripts/setup_oauth.py"
+fi
+```
+
+If no accounts exist after bootstrap → tell user: "Primero agrega una cuenta. Di 'agregar cuenta de Google'."
+
+## Step 1 — Verify accounts
 
 ```bash
 MNT=$(ls -d /sessions/*/mnt 2>/dev/null | head -1)
 python3 "$MNT/.multi-google/scripts/list_accounts.py"
 ```
-
-If this fails → tell user: "Necesitas configurar el plugin primero. Di 'configurar multi-google'."
 
 If no account specified and multiple exist, ask which one to use. With a single account, use it automatically.
 
@@ -34,8 +50,6 @@ MNT=$(ls -d /sessions/*/mnt 2>/dev/null | head -1)
 python3 "$MNT/.multi-google/scripts/gmail.py" <alias> search "<query>" [max]
 ```
 Query syntax: `from:x@y.com`, `is:unread`, `newer_than:7d`, `subject:x`, `has:attachment`, `in:inbox`
-
-Returns: `{id, from, to, subject, date, snippet, labels}`
 
 ### Read full email
 ```bash
