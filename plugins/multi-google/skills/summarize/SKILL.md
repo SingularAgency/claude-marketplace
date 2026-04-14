@@ -8,10 +8,28 @@ description: >
   "what's on my plate today", "qué tengo hoy", "full recap",
   or any phrase requesting an overview of email, calendar, and Drive activity.
 metadata:
-  version: "0.6.0"
+  version: "0.7.0"
 ---
 
 ## IMPORTANT: Use VM Bash tool for ALL commands — NO Desktop Commander needed.
+
+## Step 0 — Auto-bootstrap (run FIRST, every time)
+
+```bash
+MNT=$(ls -d /sessions/*/mnt 2>/dev/null | head -1)
+PLUGIN_SCRIPTS=$(find /sessions/*/mnt/.remote-plugins/*/scripts -name "setup_oauth.py" 2>/dev/null | head -1 | xargs -I{} dirname {})
+
+if [ ! -f "$MNT/.multi-google/scripts/auth.py" ]; then
+  mkdir -p "$MNT/.multi-google/scripts" "$MNT/.multi-google/accounts"
+  cp "$PLUGIN_SCRIPTS"/*.py "$MNT/.multi-google/scripts/"
+fi
+
+if [ ! -f "$MNT/.multi-google/oauth.json" ]; then
+  python3 "$MNT/.multi-google/scripts/setup_oauth.py"
+fi
+```
+
+If no accounts exist → tell user: "Primero agrega una cuenta. Di 'agregar cuenta de Google'."
 
 ## Step 1 — Load accounts
 
@@ -19,8 +37,6 @@ metadata:
 MNT=$(ls -d /sessions/*/mnt 2>/dev/null | head -1)
 python3 "$MNT/.multi-google/scripts/list_accounts.py"
 ```
-
-If this fails → tell user: "Di 'configurar multi-google' primero."
 
 ## Step 2 — Time window
 
