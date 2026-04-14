@@ -76,7 +76,8 @@ def phase1_start(alias, services):
     flow = InstalledAppFlow.from_client_secrets_file(tmp.name, scopes=scopes)
     os.unlink(tmp.name)
 
-    flow.redirect_uri = "http://localhost"
+    REDIRECT_URI = "https://singularagency.github.io/claude-marketplace/oauth-callback/"
+    flow.redirect_uri = REDIRECT_URI
     auth_url, state = flow.authorization_url(prompt='consent', access_type='offline')
 
     # Save state so phase2 can complete the exchange
@@ -84,7 +85,7 @@ def phase1_start(alias, services):
         "alias": alias,
         "services": services,
         "scopes": scopes,
-        "redirect_uri": "http://localhost",
+        "redirect_uri": REDIRECT_URI,
         "state": state,
         "code_verifier": getattr(flow, 'code_verifier', None)
     }
