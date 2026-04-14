@@ -11,77 +11,99 @@ description: >
   "what files did [person] change this week", "find docs about [topic]",
   or any request to interact with Google Drive files.
 metadata:
-  version: "0.6.0"
+  version: "0.7.0"
 ---
 
-## IMPORTANT: Use Desktop Commander for ALL commands
+## IMPORTANT: Use VM Bash tool for ALL commands — NO Desktop Commander needed.
 
-ALL commands MUST run via Desktop Commander (`mcp__Desktop_Commander__start_process` with `shell: "bash"`). Do NOT use the VM Bash tool. The config and scripts live in the WSL2 environment.
-
-## Step 1 — Verify config (via Desktop Commander)
+## Step 0 — Auto-bootstrap (run FIRST, every time)
 
 ```bash
-python3 -c "import json,os; print(json.load(open(os.path.expanduser('~/.multi-google/config.json')))['scripts_dir'])"
+MNT=$(ls -d /sessions/*/mnt 2>/dev/null | head -1)
+PLUGIN_SCRIPTS=$(find /sessions/*/mnt/.remote-plugins/*/scripts -name "setup_oauth.py" 2>/dev/null | head -1 | xargs -I{} dirname {})
+
+if [ ! -f "$MNT/.multi-google/scripts/auth.py" ]; then
+  mkdir -p "$MNT/.multi-google/scripts" "$MNT/.multi-google/accounts"
+  cp "$PLUGIN_SCRIPTS"/*.py "$MNT/.multi-google/scripts/"
+fi
+
+if [ ! -f "$MNT/.multi-google/oauth.json" ]; then
+  python3 "$MNT/.multi-google/scripts/setup_oauth.py"
+fi
 ```
 
-If this fails → tell user: "Di 'configurar multi-google' primero."
+If no accounts exist after bootstrap → tell user: "Primero agrega una cuenta. Di 'agregar cuenta de Google'."
 
-If no account specified, list accounts:
+## Step 1 — Verify accounts
+
 ```bash
-python3 ~/.multi-google/scripts/list_accounts.py
+MNT=$(ls -d /sessions/*/mnt 2>/dev/null | head -1)
+python3 "$MNT/.multi-google/scripts/list_accounts.py"
 ```
 
-## Commands (all via Desktop Commander)
+If no account specified and multiple exist, ask which one to use. With a single account, use it automatically.
+
+## Commands
 
 ### Recent files
 ```bash
-python3 ~/.multi-google/scripts/drive.py <alias> recent [days] [max]
+MNT=$(ls -d /sessions/*/mnt 2>/dev/null | head -1)
+python3 "$MNT/.multi-google/scripts/drive.py" <alias> recent [days] [max]
 ```
 
 ### Search files
 ```bash
-python3 ~/.multi-google/scripts/drive.py <alias> search "<query>" [max]
+MNT=$(ls -d /sessions/*/mnt 2>/dev/null | head -1)
+python3 "$MNT/.multi-google/scripts/drive.py" <alias> search "<query>" [max]
 ```
 
 ### Get file metadata
 ```bash
-python3 ~/.multi-google/scripts/drive.py <alias> get <file_id>
+MNT=$(ls -d /sessions/*/mnt 2>/dev/null | head -1)
+python3 "$MNT/.multi-google/scripts/drive.py" <alias> get <file_id>
 ```
 
 ### Read file content (Docs/Sheets/Slides)
 ```bash
-python3 ~/.multi-google/scripts/drive.py <alias> read <file_id>
+MNT=$(ls -d /sessions/*/mnt 2>/dev/null | head -1)
+python3 "$MNT/.multi-google/scripts/drive.py" <alias> read <file_id>
 ```
 
 ### Share file
 ```bash
-python3 ~/.multi-google/scripts/drive.py <alias> share <file_id> <email> [role]
+MNT=$(ls -d /sessions/*/mnt 2>/dev/null | head -1)
+python3 "$MNT/.multi-google/scripts/drive.py" <alias> share <file_id> <email> [role]
 ```
 Role: `reader` (default), `writer`, `commenter`
 
 ### Unshare
 ```bash
-python3 ~/.multi-google/scripts/drive.py <alias> unshare <file_id> <email>
+MNT=$(ls -d /sessions/*/mnt 2>/dev/null | head -1)
+python3 "$MNT/.multi-google/scripts/drive.py" <alias> unshare <file_id> <email>
 ```
 
 ### Move file
 ```bash
-python3 ~/.multi-google/scripts/drive.py <alias> move <file_id> <folder_id>
+MNT=$(ls -d /sessions/*/mnt 2>/dev/null | head -1)
+python3 "$MNT/.multi-google/scripts/drive.py" <alias> move <file_id> <folder_id>
 ```
 
 ### Create folder
 ```bash
-python3 ~/.multi-google/scripts/drive.py <alias> create_folder "<name>" [parent_folder_id]
+MNT=$(ls -d /sessions/*/mnt 2>/dev/null | head -1)
+python3 "$MNT/.multi-google/scripts/drive.py" <alias> create_folder "<name>" [parent_folder_id]
 ```
 
 ### Upload file
 ```bash
-python3 ~/.multi-google/scripts/drive.py <alias> upload <local_path> [parent_folder_id]
+MNT=$(ls -d /sessions/*/mnt 2>/dev/null | head -1)
+python3 "$MNT/.multi-google/scripts/drive.py" <alias> upload <local_path> [parent_folder_id]
 ```
 
 ### List folder
 ```bash
-python3 ~/.multi-google/scripts/drive.py <alias> list_folder [folder_id]
+MNT=$(ls -d /sessions/*/mnt 2>/dev/null | head -1)
+python3 "$MNT/.multi-google/scripts/drive.py" <alias> list_folder [folder_id]
 ```
 
 ## Guidelines

@@ -10,71 +10,87 @@ description: >
   "find all emails about [project]", "buscar emails de [persona]",
   "mandar un email a [persona]", or any request to act on Gmail.
 metadata:
-  version: "0.6.0"
+  version: "0.7.0"
 ---
 
-## IMPORTANT: Use Desktop Commander for ALL commands
+## IMPORTANT: Use VM Bash tool for ALL commands — NO Desktop Commander needed.
 
-ALL commands MUST run via Desktop Commander (`mcp__Desktop_Commander__start_process` with `shell: "bash"`). Do NOT use the VM Bash tool. The config and scripts live in the WSL2 environment.
-
-## Step 1 — Verify config (via Desktop Commander)
+## Step 0 — Auto-bootstrap (run FIRST, every time)
 
 ```bash
-python3 -c "import json,os; print(json.load(open(os.path.expanduser('~/.multi-google/config.json')))['scripts_dir'])"
+MNT=$(ls -d /sessions/*/mnt 2>/dev/null | head -1)
+PLUGIN_SCRIPTS=$(find /sessions/*/mnt/.remote-plugins/*/scripts -name "setup_oauth.py" 2>/dev/null | head -1 | xargs -I{} dirname {})
+
+if [ ! -f "$MNT/.multi-google/scripts/auth.py" ]; then
+  mkdir -p "$MNT/.multi-google/scripts" "$MNT/.multi-google/accounts"
+  cp "$PLUGIN_SCRIPTS"/*.py "$MNT/.multi-google/scripts/"
+fi
+
+if [ ! -f "$MNT/.multi-google/oauth.json" ]; then
+  python3 "$MNT/.multi-google/scripts/setup_oauth.py"
+fi
 ```
 
-If this fails → tell user: "Necesitas configurar el plugin primero. Di 'configurar multi-google'."
+If no accounts exist after bootstrap → tell user: "Primero agrega una cuenta. Di 'agregar cuenta de Google'."
 
-If no account specified, list accounts:
+## Step 1 — Verify accounts
+
 ```bash
-python3 ~/.multi-google/scripts/list_accounts.py
+MNT=$(ls -d /sessions/*/mnt 2>/dev/null | head -1)
+python3 "$MNT/.multi-google/scripts/list_accounts.py"
 ```
-Use the single account automatically, or ask if multiple exist.
 
-## Commands (all via Desktop Commander)
+If no account specified and multiple exist, ask which one to use. With a single account, use it automatically.
+
+## Commands
 
 ### Search emails
 ```bash
-python3 ~/.multi-google/scripts/gmail.py <alias> search "<query>" [max]
+MNT=$(ls -d /sessions/*/mnt 2>/dev/null | head -1)
+python3 "$MNT/.multi-google/scripts/gmail.py" <alias> search "<query>" [max]
 ```
 Query syntax: `from:x@y.com`, `is:unread`, `newer_than:7d`, `subject:x`, `has:attachment`, `in:inbox`
 
-Returns: `{id, from, to, subject, date, snippet, labels}`
-
 ### Read full email
 ```bash
-python3 ~/.multi-google/scripts/gmail.py <alias> read <message_id>
+MNT=$(ls -d /sessions/*/mnt 2>/dev/null | head -1)
+python3 "$MNT/.multi-google/scripts/gmail.py" <alias> read <message_id>
 ```
 
 ### Send new email
 ```bash
-python3 ~/.multi-google/scripts/gmail.py <alias> send "<to>" "<subject>" "<body>"
+MNT=$(ls -d /sessions/*/mnt 2>/dev/null | head -1)
+python3 "$MNT/.multi-google/scripts/gmail.py" <alias> send "<to>" "<subject>" "<body>"
 ```
 **Always confirm with user before sending — show to, subject, body.**
 
 ### Reply
 ```bash
-python3 ~/.multi-google/scripts/gmail.py <alias> reply <message_id> "<body>"
+MNT=$(ls -d /sessions/*/mnt 2>/dev/null | head -1)
+python3 "$MNT/.multi-google/scripts/gmail.py" <alias> reply <message_id> "<body>"
 ```
 **Always confirm before sending.**
 
 ### Forward
 ```bash
-python3 ~/.multi-google/scripts/gmail.py <alias> forward <message_id> "<to>" ["<note>"]
+MNT=$(ls -d /sessions/*/mnt 2>/dev/null | head -1)
+python3 "$MNT/.multi-google/scripts/gmail.py" <alias> forward <message_id> "<to>" ["<note>"]
 ```
 
 ### Archive / Trash / Label / Mark read
 ```bash
-python3 ~/.multi-google/scripts/gmail.py <alias> archive <message_id>
-python3 ~/.multi-google/scripts/gmail.py <alias> trash <message_id>
-python3 ~/.multi-google/scripts/gmail.py <alias> label <message_id> "<label>"
-python3 ~/.multi-google/scripts/gmail.py <alias> mark_read <message_id>
+MNT=$(ls -d /sessions/*/mnt 2>/dev/null | head -1)
+python3 "$MNT/.multi-google/scripts/gmail.py" <alias> archive <message_id>
+python3 "$MNT/.multi-google/scripts/gmail.py" <alias> trash <message_id>
+python3 "$MNT/.multi-google/scripts/gmail.py" <alias> label <message_id> "<label>"
+python3 "$MNT/.multi-google/scripts/gmail.py" <alias> mark_read <message_id>
 ```
 
 ### Labels / Profile
 ```bash
-python3 ~/.multi-google/scripts/gmail.py <alias> labels
-python3 ~/.multi-google/scripts/gmail.py <alias> profile
+MNT=$(ls -d /sessions/*/mnt 2>/dev/null | head -1)
+python3 "$MNT/.multi-google/scripts/gmail.py" <alias> labels
+python3 "$MNT/.multi-google/scripts/gmail.py" <alias> profile
 ```
 
 ## Guidelines

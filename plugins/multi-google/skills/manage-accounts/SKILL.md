@@ -8,17 +8,47 @@ description: >
   "update services for an account", "change account permissions",
   or any phrase about adding, removing, listing, or updating Google accounts.
 metadata:
-  version: "0.6.0"
+  version: "0.7.0"
 ---
 
-## IMPORTANT: Use Desktop Commander for ALL commands
+## IMPORTANT: Use VM Bash tool for ALL commands — NO Desktop Commander needed.
 
-ALL commands MUST run via Desktop Commander (`mcp__Desktop_Commander__start_process` with `shell: "bash"`). Do NOT use the VM Bash tool.
+## Step 0 — Auto-bootstrap (run FIRST, every time)
 
-## List accounts (via Desktop Commander)
+Run this single block unconditionally before anything else. It handles fresh sessions and new installs automatically:
 
 ```bash
-python3 ~/.multi-google/scripts/list_accounts.py
+MNT=$(ls -d /sessions/*/mnt 2>/dev/null | head -1)
+
+# Find the plugin's scripts directory (works regardless of plugin ID)
+PLUGIN_SCRIPTS=$(find /sessions/*/mnt/.remote-plugins/*/scripts -name "setup_oauth.py" 2>/dev/null | head -1 | xargs -I{} dirname {})
+
+if [ -z "$PLUGIN_SCRIPTS" ]; then
+  echo "ERROR: Plugin scripts not found. Is multi-google installed?"
+  exit 1
+fi
+
+# Copy scripts to persistent mnt if missing
+if [ ! -f "$MNT/.multi-google/scripts/auth.py" ]; then
+  echo "First run — copying scripts..."
+  mkdir -p "$MNT/.multi-google/scripts" "$MNT/.multi-google/accounts"
+  cp "$PLUGIN_SCRIPTS"/*.py "$MNT/.multi-google/scripts/"
+fi
+
+# Generate oauth.json if missing
+if [ ! -f "$MNT/.multi-google/oauth.json" ]; then
+  echo "Setting up credentials..."
+  python3 "$MNT/.multi-google/scripts/setup_oauth.py"
+fi
+
+echo "Bootstrap OK."
+```
+
+## List accounts
+
+```bash
+MNT=$(ls -d /sessions/*/mnt 2>/dev/null | head -1)
+python3 "$MNT/.multi-google/scripts/list_accounts.py"
 ```
 
 Show as table: Alias | Email | Services
@@ -27,34 +57,49 @@ Show as table: Alias | Email | Services
 
 1. Ask for **alias** (short name, no spaces, e.g. `work`, `personal`, `dev-singular`).
 2. Ask which services: Gmail / Calendar / Drive (can combine).
-3. Run auth via Desktop Commander:
+3. Run Phase 1 — generate auth URL:
 
 ```bash
-python3 ~/.multi-google/scripts/auth.py <alias> <service1> [service2] [service3] 2>&1
+MNT=$(ls -d /sessions/*/mnt 2>/dev/null | head -1)
+python3 "$MNT/.multi-google/scripts/auth.py" <alias> <service1> [service2] [service3] 2>&1
 ```
 
-> **Note:** No email needed — it's detected automatically from Google after sign-in.
+4. Look for `AUTH_URL:` in the output. Show the user the link and tell them:
 
-4. Look for `AUTH_URL:` in the output. Copy the full URL after `AUTH_URL:` and tell the user:
-   > "Abre este link en tu navegador, inicia sesión con la cuenta de Google que quieres conectar y acepta los permisos. El tab se cerrará automáticamente cuando termine."
+> "Abre este link en tu navegador e inicia sesión con la cuenta de Google que quieres conectar. Después de aceptar los permisos verás una página de éxito con un botón **'Copy URL'** — haz click en ese botón y pega la URL aquí."
 
-5. Wait for user to confirm they saw the "Connected to Claude!" page (or tab closed). Then check:
+5. Once the user pastes the redirect URL, run Phase 2:
+
 ```bash
-cat ~/.multi-google/accounts.json
+MNT=$(ls -d /sessions/*/mnt 2>/dev/null | head -1)
+python3 "$MNT/.multi-google/scripts/auth.py" <alias> --finish "<redirect_url>" 2>&1
 ```
-Look for `"success": true` in the process output or verify the alias appears in accounts.json.
 
-6. Show updated account list.
+6. Look for `{"success": true, ...}`. Show detected email and services.
 
-## Remove an account (via Desktop Commander)
+7. Show updated account list:
+```bash
+MNT=$(ls -d /sessions/*/mnt 2>/dev/null | head -1)
+python3 "$MNT/.multi-google/scripts/list_accounts.py"
+```
+
+## Remove an account
 
 ```bash
-rm -f ~/.multi-google/accounts/<alias>.json
+MNT=$(ls -d /sessions/*/mnt 2>/dev/null | head -1)
+rm -f "$MNT/.multi-google/accounts/<alias>.json"
 python3 -c "
-import json,os
-f=os.path.expanduser('~/.multi-google/accounts.json')
-a=json.load(open(f)); a.pop('<alias>',None)
-json.dump(a,open(f,'w'),indent=2); print('Removed.')
+import json, os, glob
+dirs = glob.glob('/sessions/*/mnt/.multi-google')
+d = dirs[0] if dirs else os.path.expanduser('~/.multi-google')
+f = os.path.join(d, 'accounts.json')
+if os.path.exists(f):
+    a = json.load(open(f))
+    a.pop('<alias>', None)
+    json.dump(a, open(f,'w'), indent=2)
+    print('Removed.')
+else:
+    print('No accounts file found.')
 "
-python3 ~/.multi-google/scripts/list_accounts.py
+python3 "$MNT/.multi-google/scripts/list_accounts.py"
 ```
