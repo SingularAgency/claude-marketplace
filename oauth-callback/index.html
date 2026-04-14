@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Connected to Claude</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f5f5f5;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+    }
+    .card {
+      background: white;
+      border-radius: 16px;
+      padding: 48px 52px;
+      box-shadow: 0 4px 24px rgba(0,0,0,.08);
+      text-align: center;
+      max-width: 520px;
+      width: 90%;
+    }
+    .icon { font-size: 52px; margin-bottom: 20px; }
+    h1 { color: #1a1a1a; font-size: 24px; margin-bottom: 8px; }
+    .subtitle { color: #666; font-size: 15px; margin-bottom: 32px; line-height: 1.5; }
+
+    .url-box {
+      background: #f8f8f8;
+      border: 1px solid #e0e0e0;
+      border-radius: 10px;
+      padding: 12px 16px;
+      font-family: monospace;
+      font-size: 11px;
+      color: #444;
+      word-break: break-all;
+      text-align: left;
+      margin-bottom: 16px;
+      max-height: 80px;
+      overflow-y: auto;
+      line-height: 1.5;
+    }
+
+    .copy-btn {
+      background: #1a1a1a;
+      color: white;
+      border: none;
+      border-radius: 10px;
+      padding: 13px 28px;
+      font-size: 15px;
+      font-weight: 500;
+      cursor: pointer;
+      width: 100%;
+      transition: background .15s, transform .1s;
+    }
+    .copy-btn:hover { background: #333; }
+    .copy-btn:active { transform: scale(.98); }
+    .copy-btn.copied {
+      background: #2d7a2d;
+    }
+
+    .step {
+      margin-top: 28px;
+      background: #f0faf0;
+      color: #2d7a2d;
+      border-radius: 8px;
+      padding: 10px 16px;
+      font-size: 13px;
+      display: none;
+    }
+
+    .error-state h1 { color: #c0392b; }
+    .error-state .icon::after { content: '❌'; }
+  </style>
+</head>
+<body>
+<div class="card" id="card">
+  <div class="icon" id="icon">✅</div>
+  <h1 id="title">Connected to Claude!</h1>
+  <p class="subtitle" id="subtitle">
+    Tu cuenta de Google fue autorizada exitosamente.<br>
+    Copia esta URL y pégala de vuelta en Claude.
+  </p>
+  <div class="url-box" id="url-display"></div>
+  <button class="copy-btn" id="copy-btn" onclick="copyUrl()">📋 Copy URL</button>
+  <div class="step" id="step-hint">✓ Listo — pega esa URL en Claude para completar la conexión.</div>
+</div>
+
+<script>
+  const fullUrl = window.location.href;
+  const params = new URLSearchParams(window.location.search);
+  const code = params.get('code');
+
+  if (!code) {
+    document.getElementById('icon').textContent = '❌';
+    document.getElementById('title').textContent = 'Authorization failed';
+    document.getElementById('subtitle').textContent = 'No authorization code was received. Please try again.';
+    document.getElementById('url-display').style.display = 'none';
+    document.getElementById('copy-btn').style.display = 'none';
+  } else {
+    document.getElementById('url-display').textContent = fullUrl;
+  }
+
+  function copyUrl() {
+    navigator.clipboard.writeText(fullUrl).then(() => {
+      const btn = document.getElementById('copy-btn');
+      btn.textContent = '✓ Copied!';
+      btn.classList.add('copied');
+      document.getElementById('step-hint').style.display = 'block';
+      setTimeout(() => {
+        btn.textContent = '📋 Copy URL';
+        btn.classList.remove('copied');
+      }, 3000);
+    }).catch(() => {
+      // Fallback: select the text in the box
+      const box = document.getElementById('url-display');
+      const range = document.createRange();
+      range.selectNode(box);
+      window.getSelection().removeAllRanges();
+      window.getSelection().addRange(range);
+      document.execCommand('copy');
+      const btn = document.getElementById('copy-btn');
+      btn.textContent = '✓ Copied!';
+      btn.classList.add('copied');
+      document.getElementById('step-hint').style.display = 'block';
+    });
+  }
+</script>
+</body>
+</html>
