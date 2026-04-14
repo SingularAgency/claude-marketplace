@@ -13,29 +13,25 @@ metadata:
   version: "0.6.0"
 ---
 
-## IMPORTANT: Use Desktop Commander for ALL commands
+## IMPORTANT: Use VM Bash tool for ALL commands — NO Desktop Commander needed.
 
-ALL commands MUST run via Desktop Commander (`mcp__Desktop_Commander__start_process` with `shell: "bash"`). Do NOT use the VM Bash tool. The config and scripts live in the WSL2 environment.
-
-## Step 1 — Verify config (via Desktop Commander)
+## Step 1 — Verify setup
 
 ```bash
-python3 -c "import json,os; print(json.load(open(os.path.expanduser('~/.multi-google/config.json')))['scripts_dir'])"
+MNT=$(ls -d /sessions/*/mnt 2>/dev/null | head -1)
+python3 "$MNT/.multi-google/scripts/list_accounts.py"
 ```
 
 If this fails → tell user: "Necesitas configurar el plugin primero. Di 'configurar multi-google'."
 
-If no account specified, list accounts:
-```bash
-python3 ~/.multi-google/scripts/list_accounts.py
-```
-Use the single account automatically, or ask if multiple exist.
+If no account specified and multiple exist, ask which one to use. With a single account, use it automatically.
 
-## Commands (all via Desktop Commander)
+## Commands
 
 ### Search emails
 ```bash
-python3 ~/.multi-google/scripts/gmail.py <alias> search "<query>" [max]
+MNT=$(ls -d /sessions/*/mnt 2>/dev/null | head -1)
+python3 "$MNT/.multi-google/scripts/gmail.py" <alias> search "<query>" [max]
 ```
 Query syntax: `from:x@y.com`, `is:unread`, `newer_than:7d`, `subject:x`, `has:attachment`, `in:inbox`
 
@@ -43,38 +39,44 @@ Returns: `{id, from, to, subject, date, snippet, labels}`
 
 ### Read full email
 ```bash
-python3 ~/.multi-google/scripts/gmail.py <alias> read <message_id>
+MNT=$(ls -d /sessions/*/mnt 2>/dev/null | head -1)
+python3 "$MNT/.multi-google/scripts/gmail.py" <alias> read <message_id>
 ```
 
 ### Send new email
 ```bash
-python3 ~/.multi-google/scripts/gmail.py <alias> send "<to>" "<subject>" "<body>"
+MNT=$(ls -d /sessions/*/mnt 2>/dev/null | head -1)
+python3 "$MNT/.multi-google/scripts/gmail.py" <alias> send "<to>" "<subject>" "<body>"
 ```
 **Always confirm with user before sending — show to, subject, body.**
 
 ### Reply
 ```bash
-python3 ~/.multi-google/scripts/gmail.py <alias> reply <message_id> "<body>"
+MNT=$(ls -d /sessions/*/mnt 2>/dev/null | head -1)
+python3 "$MNT/.multi-google/scripts/gmail.py" <alias> reply <message_id> "<body>"
 ```
 **Always confirm before sending.**
 
 ### Forward
 ```bash
-python3 ~/.multi-google/scripts/gmail.py <alias> forward <message_id> "<to>" ["<note>"]
+MNT=$(ls -d /sessions/*/mnt 2>/dev/null | head -1)
+python3 "$MNT/.multi-google/scripts/gmail.py" <alias> forward <message_id> "<to>" ["<note>"]
 ```
 
 ### Archive / Trash / Label / Mark read
 ```bash
-python3 ~/.multi-google/scripts/gmail.py <alias> archive <message_id>
-python3 ~/.multi-google/scripts/gmail.py <alias> trash <message_id>
-python3 ~/.multi-google/scripts/gmail.py <alias> label <message_id> "<label>"
-python3 ~/.multi-google/scripts/gmail.py <alias> mark_read <message_id>
+MNT=$(ls -d /sessions/*/mnt 2>/dev/null | head -1)
+python3 "$MNT/.multi-google/scripts/gmail.py" <alias> archive <message_id>
+python3 "$MNT/.multi-google/scripts/gmail.py" <alias> trash <message_id>
+python3 "$MNT/.multi-google/scripts/gmail.py" <alias> label <message_id> "<label>"
+python3 "$MNT/.multi-google/scripts/gmail.py" <alias> mark_read <message_id>
 ```
 
 ### Labels / Profile
 ```bash
-python3 ~/.multi-google/scripts/gmail.py <alias> labels
-python3 ~/.multi-google/scripts/gmail.py <alias> profile
+MNT=$(ls -d /sessions/*/mnt 2>/dev/null | head -1)
+python3 "$MNT/.multi-google/scripts/gmail.py" <alias> labels
+python3 "$MNT/.multi-google/scripts/gmail.py" <alias> profile
 ```
 
 ## Guidelines
