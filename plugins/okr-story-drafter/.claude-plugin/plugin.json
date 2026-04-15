@@ -1,0 +1,9 @@
+{
+  "name": "okr-story-drafter",
+  "version": "0.1.0",
+  "description": "Generates user stories with responsible parties from meeting transcripts, mapped to OKR objectives and key results.",
+  "author": {
+    "name": "Singular Agency"
+  },
+  "keywords": ["okr", "user-stories", "agile", "read.ai", "sprint-planning"]
+}
