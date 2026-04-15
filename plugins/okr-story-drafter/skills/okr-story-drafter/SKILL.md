@@ -53,7 +53,7 @@ If no match is found, expand the search to the last 14 days and try again.
 ### Step 4: Fetch the transcript
 
 Use `get_meeting_by_id` with:
-```
+```yaml
 expand: ["transcript", "action_items", "summary"]
 ```
 
