@@ -35,7 +35,7 @@ The skill will ask you two questions and then generate everything automatically.
 
 ## Output
 
-A structured markdown document saved to your outputs folder containing:
+A structured Markdown document saved to your outputs folder containing:
 - OKR summary table
 - User stories grouped by Epic (each with acceptance criteria, responsible parties, and KR mapping)
 - Responsibility summary table
