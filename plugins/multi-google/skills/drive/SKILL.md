@@ -11,7 +11,7 @@ description: >
   "what files did [person] change this week", "find docs about [topic]",
   or any request to interact with Google Drive files.
 metadata:
-  version: "0.7.0"
+  version: "0.8.0"
 ---
 
 ## IMPORTANT: Use VM Bash tool for ALL commands — NO Desktop Commander needed.
