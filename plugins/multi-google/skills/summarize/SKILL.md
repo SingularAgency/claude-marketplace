@@ -8,7 +8,7 @@ description: >
   "what's on my plate today", "qué tengo hoy", "full recap",
   or any phrase requesting an overview of email, calendar, and Drive activity.
 metadata:
-  version: "0.7.0"
+  version: "0.8.0"
 ---
 
 ## IMPORTANT: Use VM Bash tool for ALL commands — NO Desktop Commander needed.
