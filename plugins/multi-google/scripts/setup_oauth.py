@@ -26,13 +26,26 @@ CREDENTIALS = {
 }
 
 def _find_data_dir():
-    """Save to Cowork mnt folder (persists on user's machine), fallback to home."""
-    existing = glob.glob('/sessions/*/mnt/.multi-google')
-    if existing:
-        return existing[0]
-    mnts = glob.glob('/sessions/*/mnt')
-    if mnts:
-        d = os.path.join(mnts[0], '.multi-google')
+    if 'MULTI_GOOGLE_HOME' in os.environ:
+        d = os.environ['MULTI_GOOGLE_HOME']
+        os.makedirs(d, exist_ok=True)
+        return d
+    # CLAUDE_CONFIG_DIR is always set by Cowork on any OS (Mac, Windows, Linux)
+    # It points to /sessions/SESSION/mnt/.claude — parent is the mnt folder
+    claude_cfg = os.environ.get('CLAUDE_CONFIG_DIR', '')
+    if claude_cfg:
+        d = os.path.join(os.path.dirname(claude_cfg), '.multi-google')
+        os.makedirs(d, exist_ok=True)
+        return d
+    # Fallback: match current session by HOME path
+    session = os.path.basename(os.environ.get('HOME', ''))
+    for candidate in glob.glob('/sessions/*/mnt'):
+        if session and session in candidate:
+            d = os.path.join(candidate, '.multi-google')
+            os.makedirs(d, exist_ok=True)
+            return d
+    for candidate in glob.glob('/sessions/*/mnt'):
+        d = os.path.join(candidate, '.multi-google')
         os.makedirs(d, exist_ok=True)
         return d
     return os.path.expanduser('~/.multi-google')
