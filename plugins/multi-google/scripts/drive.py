@@ -34,11 +34,20 @@ import glob as _g2
 def _find_data_dir():
     if "MULTI_GOOGLE_HOME" in os.environ:
         d = os.environ["MULTI_GOOGLE_HOME"]; os.makedirs(d, exist_ok=True); return d
-    ex = _g2.glob("/sessions/*/mnt/.multi-google")
-    if ex: return ex[0]
-    mnts = _g2.glob("/sessions/*/mnt")
-    if mnts:
-        d = os.path.join(mnts[0], ".multi-google"); os.makedirs(d, exist_ok=True); return d
+    # CLAUDE_CONFIG_DIR is always set by Cowork on any OS (Mac, Windows, Linux)
+    # It points to /sessions/SESSION/mnt/.claude — parent is the mnt folder
+    claude_cfg = os.environ.get("CLAUDE_CONFIG_DIR", "")
+    if claude_cfg:
+        d = os.path.join(os.path.dirname(claude_cfg), ".multi-google")
+        os.makedirs(d, exist_ok=True); return d
+    # Fallback: match current session by HOME path
+    import glob as _gf
+    session = os.path.basename(os.environ.get("HOME", ""))
+    for candidate in _gf.glob("/sessions/*/mnt"):
+        if session and session in candidate:
+            d = os.path.join(candidate, ".multi-google"); os.makedirs(d, exist_ok=True); return d
+    for candidate in _gf.glob("/sessions/*/mnt"):
+        d = os.path.join(candidate, ".multi-google"); os.makedirs(d, exist_ok=True); return d
     return os.path.expanduser("~/.multi-google")
 
 CONFIG_DIR = _find_data_dir()
@@ -134,8 +143,16 @@ def cmd_recent(svc, days=7, max_results=20):
 
 
 def cmd_search(svc, query, max_results=20):
-    # Support full-text search and name search
-    drive_query = f"(name contains '{query}' or fullText contains '{query}') and trashed = false"
+    # If query looks like a raw Drive API expression (contains operators), use it directly.
+    # Otherwise wrap in a name/fullText search.
+    drive_operators = ('=', '!=', ' in ', 'contains', 'sharedWithMe', 'trashed',
+                       'mimeType', 'modifiedTime', 'createdTime', 'starred', 'parents')
+    is_raw_query = any(op in query for op in drive_operators)
+    if is_raw_query:
+        drive_query = query if 'trashed' in query else f"({query}) and trashed = false"
+    else:
+        safe = query.replace("'", "\\'")
+        drive_query = f"(name contains '{safe}' or fullText contains '{safe}') and trashed = false"
     try:
         result = svc.files().list(
             q=drive_query, pageSize=int(max_results), orderBy='modifiedTime desc',
