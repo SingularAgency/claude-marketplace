@@ -1,11 +1,10 @@
 {
   "name": "qa-architect-agent",
-  "version": "0.1.0",
-  "description": "Autonomous QA agent: analyzes repos or URLs, generates signed-off test plans, executes Playwright tests, and reports bugs to GitHub.",
-  "author": {
-    "name": "Singular Agency",
-    "email": "as@singularagency.co"
-  },
+  "version": "0.7.0",
+  "description": "Autonomous QA agent: analyzes repos or live URLs, generates signed-off test plans, runs Playwright tests with full evidence (screenshots + HTML dashboard), uploads screenshots to GitHub, and files bugs as GitHub issues.",
+  "author": { "name": "Singular Agency", "email": "as@singularagency.co", "url": "https://singularagency.co" },
+  "homepage": "https://github.com/SingularAgency/claude-marketplace",
   "repository": "https://github.com/SingularAgency/claude-marketplace",
-  "license": "MIT"
+  "license": "MIT",
+  "keywords": ["qa", "testing", "playwright", "github", "automation", "bugs", "e2e", "screenshots"]
 }
