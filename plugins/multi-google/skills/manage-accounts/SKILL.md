@@ -8,7 +8,7 @@ description: >
   "update services for an account", "change account permissions",
   or any phrase about adding, removing, listing, or updating Google accounts.
 metadata:
-  version: "0.7.0"
+  version: "0.8.0"
 ---
 
 ## IMPORTANT: Use VM Bash tool for ALL commands — NO Desktop Commander needed.
