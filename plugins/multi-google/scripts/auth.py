@@ -21,27 +21,52 @@ for _sp in _glob.glob(_os.path.expanduser('~/.local/lib/python3*/site-packages')
     if _sp not in _sys.path:
         _sys.path.insert(0, _sp)
 
-import json, os, sys, tempfile, glob, urllib.parse
+import json, os, sys, tempfile, glob, urllib.parse, subprocess
+
+def _ensure_google_packages():
+    """Auto-install Google API packages if missing."""
+    try:
+        import google.auth, google_auth_oauthlib, googleapiclient
+    except ImportError:
+        print("Installing Google packages...", flush=True)
+        subprocess.check_call([
+            sys.executable, '-m', 'pip', 'install', '-q',
+            'google-auth', 'google-auth-oauthlib', 'google-api-python-client',
+            '--break-system-packages'
+        ], stderr=subprocess.DEVNULL)
+        # Re-add site-packages after install
+        import glob as _g, importlib
+        for sp in _g.glob(os.path.expanduser('~/.local/lib/python3*/site-packages')):
+            if sp not in sys.path:
+                sys.path.insert(0, sp)
+
+_ensure_google_packages()
 
 REDIRECT_URI = "https://singularagency.github.io/claude-marketplace/oauth-callback/"
 
 def _find_data_dir():
-    """Find or create the persistent data directory.
-    Checks Cowork mnt folder first (no DC needed), then WSL2 home fallback."""
     if 'MULTI_GOOGLE_HOME' in os.environ:
         d = os.environ['MULTI_GOOGLE_HOME']
         os.makedirs(d, exist_ok=True)
         return d
-    # Cowork mnt folder — persists on user's machine across sessions
-    existing = glob.glob('/sessions/*/mnt/.multi-google')
-    if existing:
-        return existing[0]
-    mnts = glob.glob('/sessions/*/mnt')
-    if mnts:
-        d = os.path.join(mnts[0], '.multi-google')
+    # CLAUDE_CONFIG_DIR is always set by Cowork on any OS (Mac, Windows, Linux)
+    # It points to /sessions/SESSION/mnt/.claude — parent is the mnt folder
+    claude_cfg = os.environ.get('CLAUDE_CONFIG_DIR', '')
+    if claude_cfg:
+        d = os.path.join(os.path.dirname(claude_cfg), '.multi-google')
         os.makedirs(d, exist_ok=True)
         return d
-    # Fallback: WSL2/Desktop Commander home
+    # Fallback: match current session by HOME path
+    session = os.path.basename(os.environ.get('HOME', ''))
+    for candidate in glob.glob('/sessions/*/mnt'):
+        if session and session in candidate:
+            d = os.path.join(candidate, '.multi-google')
+            os.makedirs(d, exist_ok=True)
+            return d
+    for candidate in glob.glob('/sessions/*/mnt'):
+        d = os.path.join(candidate, '.multi-google')
+        os.makedirs(d, exist_ok=True)
+        return d
     return os.path.expanduser('~/.multi-google')
 
 CONFIG_DIR = _find_data_dir()
