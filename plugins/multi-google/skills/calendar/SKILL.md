@@ -11,7 +11,7 @@ description: >
   "find a slot for a 30 min meeting", "update [meeting] time", "what meetings do I have this week",
   or any request to view, create, modify, or respond to calendar events.
 metadata:
-  version: "0.7.0"
+  version: "0.8.0"
 ---
 
 ## IMPORTANT: Use VM Bash tool for ALL commands — NO Desktop Commander needed.
