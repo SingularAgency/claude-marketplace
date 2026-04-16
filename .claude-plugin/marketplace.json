@@ -178,8 +178,8 @@
     {
       "name": "qa-architect-agent",
       "source": "./plugins/qa-architect-agent",
-      "description": "Autonomous QA agent: analyzes repos or URLs, generates signed-off test plans, executes Playwright tests, and reports bugs to GitHub.",
-      "version": "0.1.0",
+      "description": "Autonomous QA agent: generates test plans, runs Playwright E2E tests with screenshots & HTML dashboard, uploads evidence to GitHub, files bugs as issues with auto-assign and regression tracking.",
+      "version": "0.7.0",
       "author": {
         "name": "Singular Agency",
         "email": "as@singularagency.co"
