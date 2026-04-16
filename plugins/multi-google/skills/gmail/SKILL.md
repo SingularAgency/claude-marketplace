@@ -10,7 +10,7 @@ description: >
   "find all emails about [project]", "buscar emails de [persona]",
   "mandar un email a [persona]", or any request to act on Gmail.
 metadata:
-  version: "0.7.0"
+  version: "0.8.0"
 ---
 
 ## IMPORTANT: Use VM Bash tool for ALL commands — NO Desktop Commander needed.
