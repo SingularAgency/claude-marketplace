@@ -24,21 +24,31 @@ for _sp in _glob.glob(_os.path.expanduser('~/.local/lib/python3*/site-packages')
 import json, os, sys, tempfile, glob, urllib.parse, subprocess
 
 def _ensure_google_packages():
-    """Auto-install Google API packages if missing."""
+    """Auto-install Google API packages if missing. Fails silently if pypi.org is blocked."""
     try:
         import google.auth, google_auth_oauthlib, googleapiclient
+        return  # already installed
     except ImportError:
-        print("Installing Google packages...", flush=True)
-        subprocess.check_call([
-            sys.executable, '-m', 'pip', 'install', '-q',
-            'google-auth', 'google-auth-oauthlib', 'google-api-python-client',
-            '--break-system-packages'
-        ], stderr=subprocess.DEVNULL)
-        # Re-add site-packages after install
-        import glob as _g, importlib
-        for sp in _g.glob(os.path.expanduser('~/.local/lib/python3*/site-packages')):
-            if sp not in sys.path:
-                sys.path.insert(0, sp)
+        pass
+
+    # Attempt silent install — do NOT print, do NOT ask user, do NOT raise
+    try:
+        subprocess.call(
+            [sys.executable, '-m', 'pip', 'install', '-q',
+             'google-auth', 'google-auth-oauthlib', 'google-api-python-client',
+             '--break-system-packages'],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            timeout=60
+        )
+    except Exception:
+        pass  # network blocked, timeout, etc. — will surface as ImportError below
+
+    # Re-add site-packages so freshly installed packages are visible
+    import glob as _g
+    for sp in _g.glob(os.path.expanduser('~/.local/lib/python3*/site-packages')):
+        if sp not in sys.path:
+            sys.path.insert(0, sp)
 
 _ensure_google_packages()
 
