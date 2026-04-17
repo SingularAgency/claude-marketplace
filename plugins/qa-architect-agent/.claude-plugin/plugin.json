@@ -1,10 +1,10 @@
 {
   "name": "qa-architect-agent",
-  "version": "0.7.0",
-  "description": "Autonomous QA agent: analyzes repos or live URLs, generates signed-off test plans, runs Playwright tests with full evidence (screenshots + HTML dashboard), uploads screenshots to GitHub, and files bugs as GitHub issues.",
+  "version": "0.8.0",
+  "description": "Multi-layer QA framework with 5 specialized agents: qa-architect (orchestrator + scope wizard), qa-frontend (Playwright E2E), qa-backend (k6: REST/WS/GraphQL/gRPC + optional load testing), qa-mobile (Maestro: Flutter/React Native), qa-cybersecurity (OWASP Top 10, ZAP, Frida, SQLMap). One plugin, full-stack QA coverage.",
   "author": { "name": "Singular Agency", "email": "as@singularagency.co", "url": "https://singularagency.co" },
   "homepage": "https://github.com/SingularAgency/claude-marketplace",
   "repository": "https://github.com/SingularAgency/claude-marketplace",
   "license": "MIT",
-  "keywords": ["qa", "testing", "playwright", "github", "automation", "bugs", "e2e", "screenshots"]
+  "keywords": ["qa", "testing", "playwright", "k6", "maestro", "owasp", "security", "mobile", "api", "e2e", "automation", "load-testing", "frida", "websocket", "graphql"]
 }
