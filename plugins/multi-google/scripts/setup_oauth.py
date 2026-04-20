@@ -1,29 +1,23 @@
 #!/usr/bin/env python3
-"""Writes oauth.json to the persistent Cowork mnt folder during plugin setup.
-Contains bundled Google OAuth web credentials for the multi-google plugin.
-Distributed only via the .plugin file — never stored in the marketplace repo.
+"""
+Writes oauth.json to the persistent Cowork mnt folder during plugin setup.
+
+Contains only the OAuth client_id (public) and the exchange_url (Cloud Function proxy).
+No client_secret is stored anywhere in the plugin — the secret lives server-side.
 """
 import sys as _sys, os as _os, glob as _glob
 for _sp in _glob.glob(_os.path.expanduser('~/.local/lib/python3*/site-packages')):
     if _sp not in _sys.path:
         _sys.path.insert(0, _sp)
 
-import json, os, base64, glob
+import json, os, glob
 
-_d = lambda s: base64.b64decode(s).decode()
-_dd = lambda s: _d(_d(s))
+# ── Public OAuth config (no secrets here) ─────────────────────────────────────
+# client_id identifies the OAuth app — it appears in public URLs and is not sensitive.
+# client_secret is handled entirely by the Cloud Function proxy.
+CLIENT_ID    = "849295070710-5yco5cj94ky4228mcv88aukelgb3m35j.apps.googleusercontent.com"
+EXCHANGE_URL = "REPLACE_WITH_YOUR_CLOUD_FUNCTION_URL"   # e.g. https://us-central1-PROJECT.cloudfunctions.net/google-oauth-exchange
 
-CREDENTIALS = {
-    "web": {
-        "client_id":     _dd("T0RVM09Ea3lPVFV3TnpFd0xUVXlZMjg1Y3preU1qSTRiV04yT0RoaGRXdGxaMkl6YlROMFlqWnRNelZxTG1Gd2NITXVaMjl2WjJ4bGRYTmxjbU52Ym5SbGJuUXVZMjl0"),
-        "project_id":    "singular-stories-f-f-lr5b73",
-        "auth_uri":      "https://accounts.google.com/o/oauth2/auth",
-        "token_uri":     "https://oauth2.googleapis.com/token",
-        "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
-        "client_secret": _dd("UjA5RFUxQllMV0V3U1RnNVVHUkxjMEZTYmpock1qVlRkVXgwYlZjdFVXMXBPVzQ9"),
-        "redirect_uris": [_dd("YUhSMGNITTZMeTl6YVc1bmRXeGhjbUZuWlc1amVTNW5hWFJvZFdJdWFXOHZZMnhoZFdSbExXMWhjbXRsZEhCc1lXTmxMMjloZFhSb0xXTmhiR3hpWVdOckx3PT0=")]
-    }
-}
 
 def _find_data_dir():
     if 'MULTI_GOOGLE_HOME' in os.environ:
@@ -31,7 +25,6 @@ def _find_data_dir():
         os.makedirs(d, exist_ok=True)
         return d
     # CLAUDE_CONFIG_DIR is always set by Cowork on any OS (Mac, Windows, Linux)
-    # It points to /sessions/SESSION/mnt/.claude — parent is the mnt folder
     claude_cfg = os.environ.get('CLAUDE_CONFIG_DIR', '')
     if claude_cfg:
         d = os.path.join(os.path.dirname(claude_cfg), '.multi-google')
@@ -50,11 +43,15 @@ def _find_data_dir():
         return d
     return os.path.expanduser('~/.multi-google')
 
+
 CONFIG_DIR = _find_data_dir()
-os.makedirs(CONFIG_DIR, exist_ok=True)
+os.makedirs(os.path.join(CONFIG_DIR, 'accounts'), exist_ok=True)
 
 oauth_path = os.path.join(CONFIG_DIR, 'oauth.json')
 with open(oauth_path, 'w') as f:
-    json.dump(CREDENTIALS, f, indent=2)
+    json.dump({
+        "client_id":    CLIENT_ID,
+        "exchange_url": EXCHANGE_URL,
+    }, f, indent=2)
 os.chmod(oauth_path, 0o600)
 print(json.dumps({"success": True, "path": oauth_path}))

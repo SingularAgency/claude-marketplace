@@ -8,7 +8,7 @@ description: >
   "update services for an account", "change account permissions",
   or any phrase about adding, removing, listing, or updating Google accounts.
 metadata:
-  version: "0.9.0"
+  version: "1.0.0"
 ---
 
 ## IMPORTANT: Use VM Bash tool for ALL commands — NO Desktop Commander needed.
@@ -36,7 +36,7 @@ if [ ! -f "$MNT/.multi-google/scripts/auth.py" ]; then
 fi
 
 # Pre-install Google packages silently (handles pypi.org-blocked networks gracefully)
-pip install -q google-auth google-auth-oauthlib google-api-python-client --break-system-packages 2>/dev/null || true
+pip install -q google-auth google-api-python-client --break-system-packages 2>/dev/null || true
 
 # Generate oauth.json if missing
 if [ ! -f "$MNT/.multi-google/oauth.json" ]; then

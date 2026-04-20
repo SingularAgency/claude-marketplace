@@ -1,58 +1,66 @@
 #!/usr/bin/env python3
 """
 Google OAuth2 authentication for multi-google plugin.
-Works without Desktop Commander — runs entirely from the Cowork VM.
+Uses PKCE + Cloud Function proxy — zero secrets bundled in the plugin.
 
-Supports both "web" and "installed" OAuth client types.
+Phase 1 — Start auth:
+  python3 auth.py <alias> <service1> [service2...]
+  → Prints AUTH_URL and saves pending state (code_verifier)
 
-Usage:
-  Phase 1 — Start auth:
-    python3 auth.py <alias> <service1> [service2...]
-    → Prints AUTH_URL:<url> and saves pending state
-
-  Phase 2 — Finish auth (after user pastes redirect URL):
-    python3 auth.py <alias> --finish <code_or_redirect_url>
-    → Exchanges code for token and saves credentials
+Phase 2 — Finish auth (after user pastes redirect URL):
+  python3 auth.py <alias> --finish <code_or_redirect_url>
+  → Calls Cloud Function proxy to exchange code, saves credentials
 """
 import sys as _sys, os as _os, glob as _glob
 
-# Auto-add local site-packages (for DC/WSL2 environments)
+# Auto-add local site-packages (for environments where packages are installed per-user)
 for _sp in _glob.glob(_os.path.expanduser('~/.local/lib/python3*/site-packages')):
     if _sp not in _sys.path:
         _sys.path.insert(0, _sp)
 
-import json, os, sys, tempfile, glob, urllib.parse, subprocess
+import base64, datetime, glob, hashlib, json, os, secrets, subprocess, sys, urllib.parse, urllib.request
+
+
+# ── Package bootstrap ──────────────────────────────────────────────────────────
 
 def _ensure_google_packages():
     """Auto-install Google API packages if missing. Fails silently if pypi.org is blocked."""
     try:
-        import google.auth, google_auth_oauthlib, googleapiclient
-        return  # already installed
+        import google.auth, googleapiclient
+        return
     except ImportError:
         pass
-
-    # Attempt silent install — do NOT print, do NOT ask user, do NOT raise
     try:
         subprocess.call(
             [sys.executable, '-m', 'pip', 'install', '-q',
-             'google-auth', 'google-auth-oauthlib', 'google-api-python-client',
+             'google-auth', 'google-api-python-client',
              '--break-system-packages'],
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
-            timeout=60
+            timeout=60,
         )
     except Exception:
-        pass  # network blocked, timeout, etc. — will surface as ImportError below
-
-    # Re-add site-packages so freshly installed packages are visible
-    import glob as _g
-    for sp in _g.glob(os.path.expanduser('~/.local/lib/python3*/site-packages')):
+        pass
+    for sp in glob.glob(os.path.expanduser('~/.local/lib/python3*/site-packages')):
         if sp not in sys.path:
             sys.path.insert(0, sp)
 
 _ensure_google_packages()
 
+
+# ── Constants ──────────────────────────────────────────────────────────────────
+
 REDIRECT_URI = "https://singularagency.github.io/claude-marketplace/oauth-callback/"
+
+SCOPES_MAP = {
+    "gmail":    ["https://www.googleapis.com/auth/gmail.modify",
+                 "https://www.googleapis.com/auth/gmail.send"],
+    "calendar": ["https://www.googleapis.com/auth/calendar"],
+    "drive":    ["https://www.googleapis.com/auth/drive"],
+}
+
+
+# ── Data directory ─────────────────────────────────────────────────────────────
 
 def _find_data_dir():
     if 'MULTI_GOOGLE_HOME' in os.environ:
@@ -81,149 +89,265 @@ def _find_data_dir():
 
 CONFIG_DIR = _find_data_dir()
 
-SCOPES_MAP = {
-    "gmail":    ["https://www.googleapis.com/auth/gmail.modify",
-                 "https://www.googleapis.com/auth/gmail.send"],
-    "calendar": ["https://www.googleapis.com/auth/calendar"],
-    "drive":    ["https://www.googleapis.com/auth/drive"],
-}
+
+# ── OAuth config ───────────────────────────────────────────────────────────────
 
 def _load_oauth():
     path = os.path.join(CONFIG_DIR, 'oauth.json')
     if not os.path.exists(path):
-        print(json.dumps({"error": f"OAuth credentials not found at {path}. Run setup first."}))
+        print(json.dumps({"error": f"OAuth config not found at {path}. Run setup first."}))
         sys.exit(1)
     with open(path) as f:
         return json.load(f)
 
-def _make_flow(creds_data, scopes):
-    """Create a Flow that works with both 'web' and 'installed' credential types."""
+
+# ── PKCE ───────────────────────────────────────────────────────────────────────
+
+def _generate_pkce():
+    """Generate a PKCE code_verifier and S256 code_challenge."""
+    code_verifier = base64.urlsafe_b64encode(secrets.token_bytes(32)).rstrip(b'=').decode()
+    digest = hashlib.sha256(code_verifier.encode()).digest()
+    code_challenge = base64.urlsafe_b64encode(digest).rstrip(b'=').decode()
+    return code_verifier, code_challenge
+
+
+# ── Proxy calls ────────────────────────────────────────────────────────────────
+
+def _proxy_post(exchange_url, payload):
+    """POST JSON to the Cloud Function proxy, return parsed response."""
+    data = json.dumps(payload).encode()
+    req = urllib.request.Request(
+        exchange_url,
+        data=data,
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
     try:
-        from google_auth_oauthlib.flow import Flow, InstalledAppFlow
-    except ImportError:
-        print(json.dumps({"error": "Run: pip install google-auth google-auth-oauthlib google-api-python-client"}))
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            return json.loads(resp.read())
+    except urllib.error.HTTPError as e:
+        return json.loads(e.read())
+    except Exception as exc:
+        return {"error": "proxy_unreachable", "error_description": str(exc)}
+
+
+def _exchange_via_proxy(exchange_url, code, code_verifier):
+    return _proxy_post(exchange_url, {
+        "action": "exchange",
+        "code": code,
+        "code_verifier": code_verifier,
+        "redirect_uri": REDIRECT_URI,
+    })
+
+
+def _refresh_via_proxy(exchange_url, refresh_token):
+    return _proxy_post(exchange_url, {
+        "action": "refresh",
+        "refresh_token": refresh_token,
+    })
+
+
+# ── Credential management ──────────────────────────────────────────────────────
+
+def _get_credentials(alias):
+    """Load stored credentials, refreshing via proxy if the access token is expired."""
+    creds_path = os.path.join(CONFIG_DIR, 'accounts', f'{alias}.json')
+    if not os.path.exists(creds_path):
+        print(json.dumps({"error": f"Account '{alias}' not found. Add it first."}))
         sys.exit(1)
 
-    tmp = tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False)
-    json.dump(creds_data, tmp); tmp.close()
+    with open(creds_path) as f:
+        data = json.load(f)
 
-    cred_type = list(creds_data.keys())[0]  # "web" or "installed"
-    if cred_type == "web":
-        flow = Flow.from_client_secrets_file(tmp.name, scopes=scopes)
-    else:
-        flow = InstalledAppFlow.from_client_secrets_file(tmp.name, scopes=scopes)
+    oauth = _load_oauth()
+    exchange_url = oauth.get('exchange_url')
 
-    os.unlink(tmp.name)
-    return flow
+    # Check expiry with a 5-minute safety buffer
+    expiry_str = data.get('expiry')
+    is_expired = True
+    if expiry_str:
+        try:
+            expiry = datetime.datetime.fromisoformat(expiry_str)
+            is_expired = datetime.datetime.utcnow() > (expiry - datetime.timedelta(minutes=5))
+        except ValueError:
+            pass
+
+    if is_expired and data.get('refresh_token') and exchange_url:
+        result = _refresh_via_proxy(exchange_url, data['refresh_token'])
+        if 'access_token' in result:
+            data['token'] = result['access_token']
+            if 'refresh_token' in result:
+                data['refresh_token'] = result['refresh_token']
+            if 'expires_in' in result:
+                new_expiry = datetime.datetime.utcnow() + datetime.timedelta(seconds=result['expires_in'])
+                data['expiry'] = new_expiry.isoformat()
+            with open(creds_path, 'w') as f:
+                json.dump(data, f, indent=2)
+
+    try:
+        from google.oauth2.credentials import Credentials
+    except ImportError:
+        print(json.dumps({"error": "Run: pip install google-auth google-api-python-client"}))
+        sys.exit(1)
+
+    # Build Credentials with a far-future expiry so google-auth won't auto-refresh
+    # (we handle refresh ourselves above via the proxy)
+    creds = Credentials(
+        token=data.get('token'),
+        refresh_token=data.get('refresh_token'),
+        token_uri='https://oauth2.googleapis.com/token',
+        client_id=oauth.get('client_id'),
+        client_secret=None,   # no secret in the plugin
+        scopes=data.get('scopes'),
+    )
+    # Mark token as fresh to suppress auto-refresh attempts
+    creds.expiry = datetime.datetime.utcnow() + datetime.timedelta(hours=1)
+    return creds
+
+
+# ── Service builders (imported by gmail.py / drive.py / gcalendar.py) ─────────
+
+def _build_service(name, version, alias):
+    creds = _get_credentials(alias)
+    try:
+        from googleapiclient.discovery import build
+    except ImportError:
+        print(json.dumps({"error": "Run: pip install google-api-python-client"}))
+        sys.exit(1)
+    return build(name, version, credentials=creds)
+
+def get_gmail_service(alias):    return _build_service('gmail',    'v1', alias)
+def get_calendar_service(alias): return _build_service('calendar', 'v3', alias)
+def get_drive_service(alias):    return _build_service('drive',    'v3', alias)
+
+
+# ── Phase 1 — Start OAuth ──────────────────────────────────────────────────────
 
 def phase1_start(alias, services):
-    """Generate the OAuth URL and save pending state."""
-    scopes = ["openid", "https://www.googleapis.com/auth/userinfo.email"]
-    for svc in services:
-        scopes.extend(SCOPES_MAP.get(svc, []))
+    scopes = list(dict.fromkeys(
+        scope for svc in services for scope in SCOPES_MAP.get(svc, [])
+    ))
 
-    creds_data = _load_oauth()
-    flow = _make_flow(creds_data, scopes)
-    flow.redirect_uri = REDIRECT_URI
-    auth_url, state = flow.authorization_url(prompt='consent', access_type='offline')
+    oauth = _load_oauth()
+    code_verifier, code_challenge = _generate_pkce()
 
-    # Save state so phase2 can complete the exchange
-    pending = {
-        "alias": alias,
-        "services": services,
-        "scopes": scopes,
-        "redirect_uri": REDIRECT_URI,
-        "state": state,
-        "code_verifier": getattr(flow, 'code_verifier', None)
+    params = {
+        'client_id':             oauth['client_id'],
+        'redirect_uri':          REDIRECT_URI,
+        'response_type':         'code',
+        'scope':                 ' '.join(scopes),
+        'code_challenge':        code_challenge,
+        'code_challenge_method': 'S256',
+        'access_type':           'offline',
+        'prompt':                'consent',
+        'state':                 alias,
     }
-    pending_path = os.path.join(CONFIG_DIR, f'pending_auth_{alias}.json')
-    with open(pending_path, 'w') as f:
+    auth_url = 'https://accounts.google.com/o/oauth2/v2/auth?' + urllib.parse.urlencode(params)
+
+    # Persist code_verifier so phase 2 can use it
+    pending = {
+        'alias':         alias,
+        'services':      services,
+        'scopes':        scopes,
+        'code_verifier': code_verifier,
+    }
+    with open(os.path.join(CONFIG_DIR, f'pending_{alias}.json'), 'w') as f:
         json.dump(pending, f)
 
-    print(f"AUTH_URL:{auth_url}", flush=True)
+    print(f"AUTH_URL:{auth_url}")
+
+
+# ── Phase 2 — Finish OAuth ─────────────────────────────────────────────────────
 
 def phase2_finish(alias, code_or_url):
-    """Exchange the auth code for a token and save credentials."""
-    # Support pasting the full redirect URL or just the code
-    if code_or_url.startswith('http'):
-        params = dict(urllib.parse.parse_qsl(urllib.parse.urlparse(code_or_url).query))
-        code = params.get('code')
-        if not code:
-            print(json.dumps({"error": "No 'code' parameter found in the URL. Did you paste the full redirect URL?"}))
-            sys.exit(1)
-    else:
-        code = code_or_url
-
-    pending_path = os.path.join(CONFIG_DIR, f'pending_auth_{alias}.json')
+    pending_path = os.path.join(CONFIG_DIR, f'pending_{alias}.json')
     if not os.path.exists(pending_path):
-        print(json.dumps({"error": f"No pending auth found for '{alias}'. Run auth.py {alias} <services> first."}))
+        print(json.dumps({"error": f"No pending auth for '{alias}'. Run phase 1 first."}))
         sys.exit(1)
 
     with open(pending_path) as f:
         pending = json.load(f)
 
-    services = pending['services']
-    scopes   = pending['scopes']
+    # Accept either a bare code or the full redirect URL
+    code = code_or_url
+    if code_or_url.startswith('http'):
+        parsed = urllib.parse.urlparse(code_or_url)
+        params = urllib.parse.parse_qs(parsed.query)
+        code = params.get('code', [None])[0]
+        if not code:
+            print(json.dumps({"error": "No 'code' parameter found in the URL."}))
+            sys.exit(1)
 
-    try:
-        from googleapiclient.discovery import build
-    except ImportError:
-        print(json.dumps({"error": "Run: pip install google-auth google-auth-oauthlib google-api-python-client"}))
+    oauth = _load_oauth()
+    exchange_url = oauth.get('exchange_url')
+    if not exchange_url:
+        print(json.dumps({"error": "No exchange_url in oauth.json. Re-run setup."}))
         sys.exit(1)
 
-    creds_data = _load_oauth()
-    flow = _make_flow(creds_data, scopes)
-    flow.redirect_uri = pending['redirect_uri']
-    if pending.get('code_verifier'):
-        flow.code_verifier = pending['code_verifier']
+    token_data = _exchange_via_proxy(exchange_url, code, pending['code_verifier'])
 
-    os.environ['OAUTHLIB_RELAX_TOKEN_SCOPE'] = '1'
-    flow.fetch_token(code=code)
-    creds = flow.credentials
+    if 'error' in token_data:
+        print(json.dumps({
+            "error":       token_data.get('error'),
+            "description": token_data.get('error_description'),
+        }))
+        sys.exit(1)
 
-    # Get email from Google
+    # Fetch email via userinfo endpoint
+    access_token = token_data['access_token']
+    email = alias
     try:
-        svc = build('oauth2', 'v2', credentials=creds)
-        email = svc.userinfo().get().execute().get('email', alias + '@unknown')
+        req = urllib.request.Request(
+            "https://www.googleapis.com/oauth2/v2/userinfo",
+            headers={"Authorization": f"Bearer {access_token}"},
+        )
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            email = json.loads(resp.read()).get('email', alias)
     except Exception:
-        email = alias + '@unknown'
+        pass
 
-    # Save token
+    # Calculate token expiry
+    expires_in = token_data.get('expires_in', 3600)
+    expiry = (datetime.datetime.utcnow() + datetime.timedelta(seconds=expires_in)).isoformat()
+
+    # Save credentials
     accounts_dir = os.path.join(CONFIG_DIR, 'accounts')
     os.makedirs(accounts_dir, exist_ok=True)
+    creds_data = {
+        'alias':         alias,
+        'email':         email,
+        'token':         access_token,
+        'refresh_token': token_data.get('refresh_token'),
+        'expiry':        expiry,
+        'scopes':        pending['scopes'],
+        'services':      pending['services'],
+    }
     with open(os.path.join(accounts_dir, f'{alias}.json'), 'w') as f:
-        f.write(creds.to_json())
+        json.dump(creds_data, f, indent=2)
 
-    # Update accounts registry
-    accounts_file = os.path.join(CONFIG_DIR, 'accounts.json')
-    accounts = {}
-    if os.path.exists(accounts_file):
-        with open(accounts_file) as f:
-            accounts = json.load(f)
-    accounts[alias] = {'email': email, 'services': services}
-    with open(accounts_file, 'w') as f:
-        json.dump(accounts, f, indent=2)
-
-    # Clean up pending state
     os.remove(pending_path)
 
-    print(json.dumps({"success": True, "alias": alias, "email": email, "services": services}), flush=True)
+    print(json.dumps({
+        "success":  True,
+        "alias":    alias,
+        "email":    email,
+        "services": pending['services'],
+    }))
 
-# --- Main ---
-if len(sys.argv) < 2:
-    print(json.dumps({"error": "Usage: auth.py <alias> <service1> [service2...] OR auth.py <alias> --finish <code_or_url>"}))
-    sys.exit(1)
 
-alias = sys.argv[1]
+# ── CLI entry point ────────────────────────────────────────────────────────────
 
-if '--finish' in sys.argv:
-    idx = sys.argv.index('--finish')
-    if idx + 1 >= len(sys.argv):
-        print(json.dumps({"error": "--finish requires a code or redirect URL"}))
+if __name__ == '__main__':
+    args = sys.argv[1:]
+    if not args:
+        print(json.dumps({"error": "Usage: auth.py <alias> [services...] | auth.py <alias> --finish <url>"}))
         sys.exit(1)
-    phase2_finish(alias, sys.argv[idx + 1])
-else:
-    if len(sys.argv) < 3:
-        print(json.dumps({"error": "Usage: auth.py <alias> <service1> [service2...]"}))
-        sys.exit(1)
-    phase1_start(alias, sys.argv[2:])
+
+    alias = args[0]
+
+    if '--finish' in args:
+        idx = args.index('--finish')
+        phase2_finish(alias, args[idx + 1])
+    else:
+        services = args[1:] if len(args) > 1 else ['gmail', 'calendar', 'drive']
+        phase1_start(alias, services)

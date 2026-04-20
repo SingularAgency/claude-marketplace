@@ -8,7 +8,7 @@ description: >
   "what's on my plate today", "qué tengo hoy", "full recap",
   or any phrase requesting an overview of email, calendar, and Drive activity.
 metadata:
-  version: "0.9.0"
+  version: "1.0.0"
 ---
 
 ## IMPORTANT: Use VM Bash tool for ALL commands — NO Desktop Commander needed.
@@ -25,7 +25,7 @@ if [ ! -f "$MNT/.multi-google/scripts/auth.py" ]; then
 fi
 
 # Pre-install Google packages silently (handles pypi.org-blocked networks gracefully)
-pip install -q google-auth google-auth-oauthlib google-api-python-client --break-system-packages 2>/dev/null || true
+pip install -q google-auth google-api-python-client --break-system-packages 2>/dev/null || true
 
 if [ ! -f "$MNT/.multi-google/oauth.json" ]; then
   python3 "$MNT/.multi-google/scripts/setup_oauth.py"
