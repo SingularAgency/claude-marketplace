@@ -293,18 +293,22 @@ def phase2_finish(alias, code_or_url):
         }))
         sys.exit(1)
 
-    # Fetch email via userinfo endpoint
+    # Fetch email — try userinfo first, fall back to Gmail profile
     access_token = token_data['access_token']
     email = alias
-    try:
-        req = urllib.request.Request(
-            "https://www.googleapis.com/oauth2/v2/userinfo",
-            headers={"Authorization": f"Bearer {access_token}"},
-        )
-        with urllib.request.urlopen(req, timeout=10) as resp:
-            email = json.loads(resp.read()).get('email', alias)
-    except Exception:
-        pass
+    for url in [
+        "https://www.googleapis.com/oauth2/v2/userinfo",
+        "https://gmail.googleapis.com/gmail/v1/users/me/profile",
+    ]:
+        try:
+            req = urllib.request.Request(url, headers={"Authorization": f"Bearer {access_token}"})
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                data = json.loads(resp.read())
+                email = data.get('email') or data.get('emailAddress') or alias
+                if email != alias:
+                    break
+        except Exception:
+            pass
 
     # Calculate token expiry
     expires_in = token_data.get('expires_in', 3600)

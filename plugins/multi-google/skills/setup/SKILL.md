@@ -7,7 +7,7 @@ description: >
   to set up or initialize the Multi-Google plugin for the first time.
   Also trigger if any Google service is not working and setup was never completed.
 metadata:
-  version: "1.0.0"
+  version: "1.0.1"
 ---
 
 ## IMPORTANT: Use VM Bash tool for ALL commands — NO Desktop Commander needed.

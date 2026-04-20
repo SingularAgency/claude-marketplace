@@ -134,7 +134,7 @@
       "name": "multi-google",
       "source": "./plugins/multi-google",
       "description": "Full Google Workspace assistant across multiple accounts. Gmail, Calendar, Drive \u2014 one Google Sign-In per account. Requires Desktop Commander.",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "author": {
         "name": "Singular Agency",
         "email": "as@singularagency.co"

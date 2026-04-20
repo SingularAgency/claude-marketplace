@@ -8,7 +8,7 @@ description: >
   "update services for an account", "change account permissions",
   or any phrase about adding, removing, listing, or updating Google accounts.
 metadata:
-  version: "1.0.0"
+  version: "1.0.1"
 ---
 
 ## IMPORTANT: Use VM Bash tool for ALL commands — NO Desktop Commander needed.
@@ -58,29 +58,58 @@ Show as table: Alias | Email | Services
 
 ## Add a new account
 
-1. Ask for **alias** (short name, no spaces, e.g. `work`, `personal`, `dev-singular`).
-2. Ask which services: Gmail / Calendar / Drive (can combine).
-3. Run Phase 1 — generate auth URL:
+Run the wizard — ask each question and wait for the answer before moving to the next step. Never skip or assume.
+
+**Step 1 — Alias**
+Ask: *"¿Qué nombre le ponés a esta cuenta? (ej: work, personal, empresa)"*
+Wait for answer. Alias must be one word, no spaces.
+
+**Step 2 — Services wizard**
+Use the `AskUserQuestion` tool with `multiSelect: true` and these exact options:
+
+```json
+{
+  "question": "¿Qué servicios querés conectar para la cuenta \"[alias]\"?",
+  "header": "Servicios",
+  "multiSelect": true,
+  "options": [
+    { "label": "📬 Gmail",    "description": "Leer, enviar y gestionar emails" },
+    { "label": "📅 Calendar", "description": "Ver y crear eventos del calendario" },
+    { "label": "📁 Drive",    "description": "Buscar y leer archivos en Drive" }
+  ]
+}
+```
+
+Map selected labels to service names: `📬 Gmail` → `gmail`, `📅 Calendar` → `calendar`, `📁 Drive` → `drive`.
+
+**Step 3 — Confirm**
+Show a summary and ask for confirmation before generating the URL:
+
+> *"Voy a conectar la cuenta **[alias]** con acceso a: [servicios]. ¿Confirmás?"*
+
+**Step 4 — Generate auth URL**
 
 ```bash
 MNT=$(ls -d /sessions/*/mnt 2>/dev/null | head -1)
 python3 "$MNT/.multi-google/scripts/auth.py" <alias> <service1> [service2] [service3] 2>&1
 ```
 
-4. Look for `AUTH_URL:` in the output. Show the user the link and tell them:
+Look for `AUTH_URL:` in the output. Show the user the link and say:
 
-> "Abre este link en tu navegador e inicia sesión con la cuenta de Google que quieres conectar. Después de aceptar los permisos verás una página de éxito con un botón **'Copy URL'** — haz click en ese botón y pega la URL aquí."
+> "Abrí este link en tu navegador e iniciá sesión con la cuenta de Google que querés conectar. Después de aceptar los permisos vas a ver una página de éxito con un botón **'Copy URL'** — hacé click en ese botón y pegá la URL aquí."
 
-5. Once the user pastes the redirect URL, run Phase 2:
+**Step 5 — Finish auth**
+
+Once the user pastes the redirect URL:
 
 ```bash
 MNT=$(ls -d /sessions/*/mnt 2>/dev/null | head -1)
 python3 "$MNT/.multi-google/scripts/auth.py" <alias> --finish "<redirect_url>" 2>&1
 ```
 
-6. Look for `{"success": true, ...}`. Show detected email and services.
+Look for `{"success": true, ...}`. Show detected email and connected services.
 
-7. Show updated account list:
+**Step 6 — Show updated account list**
 ```bash
 MNT=$(ls -d /sessions/*/mnt 2>/dev/null | head -1)
 python3 "$MNT/.multi-google/scripts/list_accounts.py"
@@ -88,21 +117,11 @@ python3 "$MNT/.multi-google/scripts/list_accounts.py"
 
 ## Remove an account
 
+Ask for confirmation before removing. Then:
+
 ```bash
 MNT=$(ls -d /sessions/*/mnt 2>/dev/null | head -1)
 rm -f "$MNT/.multi-google/accounts/<alias>.json"
-python3 -c "
-import json, os, glob
-dirs = glob.glob('/sessions/*/mnt/.multi-google')
-d = dirs[0] if dirs else os.path.expanduser('~/.multi-google')
-f = os.path.join(d, 'accounts.json')
-if os.path.exists(f):
-    a = json.load(open(f))
-    a.pop('<alias>', None)
-    json.dump(a, open(f,'w'), indent=2)
-    print('Removed.')
-else:
-    print('No accounts file found.')
-"
+echo "Account <alias> removed."
 python3 "$MNT/.multi-google/scripts/list_accounts.py"
 ```
