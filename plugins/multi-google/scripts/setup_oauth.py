@@ -15,7 +15,7 @@ import json, os, glob
 # ── Public OAuth config (no secrets here) ─────────────────────────────────────
 # client_id identifies the OAuth app — it appears in public URLs and is not sensitive.
 # client_secret is handled entirely by the Cloud Function proxy.
-CLIENT_ID    = "849295070710-5yco5cj94ky4228mcv88aukelgb3m35j.apps.googleusercontent.com"
+CLIENT_ID    = "857892950710-52co9s92228mcv88aukegb3m3tb6m35j.apps.googleusercontent.com"
 EXCHANGE_URL = "https://claude-code-exchanger-857892950710.us-central1.run.app"
 
 
