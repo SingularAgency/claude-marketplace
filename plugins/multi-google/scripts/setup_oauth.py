@@ -16,7 +16,7 @@ import json, os, glob
 # client_id identifies the OAuth app — it appears in public URLs and is not sensitive.
 # client_secret is handled entirely by the Cloud Function proxy.
 CLIENT_ID    = "849295070710-5yco5cj94ky4228mcv88aukelgb3m35j.apps.googleusercontent.com"
-EXCHANGE_URL = "REPLACE_WITH_YOUR_CLOUD_FUNCTION_URL"   # e.g. https://us-central1-PROJECT.cloudfunctions.net/google-oauth-exchange
+EXCHANGE_URL = "https://claude-code-exchanger-857892950710.us-central1.run.app"
 
 
 def _find_data_dir():
