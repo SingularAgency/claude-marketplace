@@ -73,6 +73,7 @@ Save the full JSON response to `/tmp/nexusqa-context.json`. Extract:
 > The platform context replaces the need to manually ask for target URLs and credentials — the app's `base_url`, `auth_type`, and `auth_config` provide all of that automatically.
 
 **If `HAS_CONFIG: false`** → continue normally to Phase 0, no platform integration.
+Optionally mention: _"Si querés trackear los resultados en NexusQA, ejecutá `qa-architect-agent:setup` primero."_
 
 ---
 
