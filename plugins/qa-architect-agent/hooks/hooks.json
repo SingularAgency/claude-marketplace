@@ -1,0 +1,33 @@
+{
+  "hooks": {
+    "SessionStart": [{
+      "hooks": [
+        {
+          "type": "command",
+          "comment": "Playwright npm deps — only reinstall if package.json changed",
+          "command": "diff -q \"${CLAUDE_PLUGIN_ROOT}/package.json\" \"${CLAUDE_PLUGIN_DATA}/package.json\" >/dev/null 2>&1 || (mkdir -p \"${CLAUDE_PLUGIN_DATA}\" && cp \"${CLAUDE_PLUGIN_ROOT}/package.json\" \"${CLAUDE_PLUGIN_DATA}/\" && cd \"${CLAUDE_PLUGIN_DATA}\" && PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 npm install --prefer-offline 2>/dev/null) || rm -f \"${CLAUDE_PLUGIN_DATA}/package.json\""
+        },
+        {
+          "type": "command",
+          "comment": "k6 — backend API/load testing, only install if missing",
+          "command": "which k6 >/dev/null 2>&1 || (curl -sL https://github.com/grafana/k6/releases/download/v0.51.0/k6-v0.51.0-linux-amd64.tar.gz | tar xz -C /tmp/ && sudo mv /tmp/k6-v0.51.0-linux-amd64/k6 /usr/local/bin/k6 2>/dev/null) || true"
+        },
+        {
+          "type": "command",
+          "comment": "Maestro — mobile testing CLI, only install if missing",
+          "command": "which maestro >/dev/null 2>&1 || (curl -fsSL https://get.maestro.mobile.dev | bash 2>/dev/null) || true"
+        },
+        {
+          "type": "command",
+          "comment": "SQLMap — SQL injection scanner, only install if missing",
+          "command": "which sqlmap >/dev/null 2>&1 || pip install sqlmap --break-system-packages -q 2>/dev/null || true"
+        },
+        {
+          "type": "command",
+          "comment": "Frida tools — mobile security / SSL pinning bypass, only install if missing",
+          "command": "which frida >/dev/null 2>&1 || pip install frida-tools --break-system-packages -q 2>/dev/null || true"
+        }
+      ]
+    }]
+  }
+}
