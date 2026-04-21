@@ -1,6 +1,6 @@
 {
   "name": "qa-architect-agent",
-  "version": "0.9.0",
+  "version": "0.9.1",
   "description": "Multi-layer QA framework with 5 specialized agents: qa-architect (orchestrator + NexusQA platform integration), qa-frontend (Playwright E2E), qa-backend (k6: REST/WS/GraphQL/gRPC + optional load testing), qa-mobile (Maestro: Flutter/React Native), qa-cybersecurity (OWASP Top 10, ZAP, Frida, SQLMap). Includes real-time result reporting to NexusQA platform.",
   "author": { "name": "Singular Agency", "email": "as@singularagency.co", "url": "https://singularagency.co" },
   "homepage": "https://github.com/SingularAgency/claude-marketplace",
