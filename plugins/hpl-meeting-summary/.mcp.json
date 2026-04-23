@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "Slack": {
+      "type": "http",
+      "url": "https://mcp.slack.com/mcp"
+    },
+    "Read.ai": {
+      "type": "http",
+      "url": "${READAI_MCP_URL}"
+    }
+  }
+}

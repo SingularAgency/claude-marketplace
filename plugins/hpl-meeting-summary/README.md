@@ -70,4 +70,4 @@ The four `*_channel` keys are optional — all fall back to `default_channel`. S
 
 ## Scheduled task
 
-Create a scheduled task pointing to `hpl-meeting-summary:auto-detect` every 5–10 minutes. Use the `schedule` skill to set this up.
+Create a scheduled task pointing to `hpl-meeting-summary:auto-detect` every hour. Use the `schedule` skill to set this up.

@@ -1,7 +1,7 @@
 ---
 name: auto-detect
 description: >
-  This skill runs automatically on a schedule every 5–10 minutes to detect new completed
+  This skill runs automatically on a schedule every hour to detect new completed
   client meetings from Read AI and trigger the meeting-analyst agent for each one.
   The agent runs all three analyses (Summary, ICP Qualification, Marketing Feedback)
   and posts each independently to Slack. This skill should NOT be triggered manually —
@@ -39,13 +39,13 @@ Extract:
 Call `list_meetings` with:
 ```
 limit: 10
-start_datetime_gte: <2 hours ago in ISO 8601>
+start_datetime_gte: <1 hour ago in ISO 8601>
 expand: ["summary", "action_items", "key_questions", "topics", "chapter_summaries"]
 ```
 
-Compute "2 hours ago" via Bash:
+Compute "1 hour ago" via Bash:
 ```bash
-date -u -d '2 hours ago' '+%Y-%m-%dT%H:%M:%SZ'
+date -u -d '1 hour ago' '+%Y-%m-%dT%H:%M:%SZ'
 ```
 
 ---
