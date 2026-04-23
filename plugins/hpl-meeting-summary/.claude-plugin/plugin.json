@@ -1,6 +1,6 @@
 {
   "name": "hpl-meeting-summary",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "Post-meeting analysis suite for Singular Innovation. One agent (meeting-analyst) orchestrates three independent analyses after every client call: Strategic Summary, ICP Qualification, and Marketing Feedback — each posted as a separate Slack thread.",
   "author": {
     "name": "Singular Agency",
