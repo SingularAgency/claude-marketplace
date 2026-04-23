@@ -159,16 +159,26 @@ The report posts as a **thread reply** — the parent message is the headline on
 
 ## Step 10 — Choose the Slack channel
 
-Read config from `~/mnt/.read-ai-summary-config.json`.
+Resolve the posting channel from config:
 
-Priority:
-1. `icp_channel` — if set in config, use it
-2. `default_channel` — fallback
+```bash
+python3 -c "
+import json, os
+with open(os.path.expanduser('~/mnt/.read-ai-summary-config.json')) as f:
+    c = json.load(f)
+ch_id   = c.get('icp_channel')   or c.get('default_channel')
+ch_name = c.get('icp_channel_name') or c.get('default_channel_name', '#general')
+auto    = c.get('auto_post', False)
+print('CH_ID='   + str(ch_id))
+print('CH_NAME=' + str(ch_name))
+print('AUTO='    + str(auto))
+"
+```
 
-If neither exists → ask the user which channel to post to.
+Priority: `icp_channel` → `default_channel`. If neither is set, ask the user which channel to post to.
 
-If `auto_post: true` AND channel is known → post immediately without asking.
-If `auto_post: false` → show a preview of the headline + report and confirm before posting.
+If `AUTO=True` AND channel is known → post immediately without asking.
+If `AUTO=False` → show a preview of the headline + report and confirm before posting.
 
 ---
 
@@ -197,11 +207,11 @@ After both posts succeed, append the meeting ID to `icp_posted_meeting_ids` in c
 
 ```bash
 python3 -c "
-import json
-with open('$HOME/mnt/.read-ai-summary-config.json', 'r') as f:
+import json, os
+with open(os.path.expanduser('~/mnt/.read-ai-summary-config.json'), 'r') as f:
     config = json.load(f)
 config.setdefault('icp_posted_meeting_ids', []).append('<MEETING_ID>')
-with open('$HOME/mnt/.read-ai-summary-config.json', 'w') as f:
+with open(os.path.expanduser('~/mnt/.read-ai-summary-config.json'), 'w') as f:
     json.dump(config, f, indent=2)
 "
 ```

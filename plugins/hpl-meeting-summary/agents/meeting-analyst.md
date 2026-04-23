@@ -188,8 +188,8 @@ path = os.path.expanduser('~/mnt/.read-ai-summary-config.json')
 with open(path) as f:
     c = json.load(f)
 lst = c.setdefault('posted_meeting_ids', [])
-if 'MEETING_ID_HERE' not in lst:
-    lst.append('MEETING_ID_HERE')
+if '<MEETING_ID>' not in lst:
+    lst.append('<MEETING_ID>')
 with open(path, 'w') as f:
     json.dump(c, f, indent=2)
 "
@@ -259,8 +259,8 @@ path = os.path.expanduser('~/mnt/.read-ai-summary-config.json')
 with open(path) as f:
     c = json.load(f)
 lst = c.setdefault('icp_posted_meeting_ids', [])
-if 'MEETING_ID_HERE' not in lst:
-    lst.append('MEETING_ID_HERE')
+if '<MEETING_ID>' not in lst:
+    lst.append('<MEETING_ID>')
 with open(path, 'w') as f:
     json.dump(c, f, indent=2)
 "
@@ -318,8 +318,8 @@ path = os.path.expanduser('~/mnt/.read-ai-summary-config.json')
 with open(path) as f:
     c = json.load(f)
 lst = c.setdefault('marketing_posted_meeting_ids', [])
-if 'MEETING_ID_HERE' not in lst:
-    lst.append('MEETING_ID_HERE')
+if '<MEETING_ID>' not in lst:
+    lst.append('<MEETING_ID>')
 with open(path, 'w') as f:
     json.dump(c, f, indent=2)
 "
@@ -340,8 +340,8 @@ path = os.path.expanduser('~/mnt/.read-ai-summary-config.json')
 with open(path) as f:
     c = json.load(f)
 lst = c.setdefault('agent_processed_meeting_ids', [])
-if 'MEETING_ID_HERE' not in lst:
-    lst.append('MEETING_ID_HERE')
+if '<MEETING_ID>' not in lst:
+    lst.append('<MEETING_ID>')
 with open(path, 'w') as f:
     json.dump(c, f, indent=2)
 "

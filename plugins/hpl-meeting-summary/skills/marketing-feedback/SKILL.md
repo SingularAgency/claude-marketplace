@@ -87,13 +87,27 @@ Generate **1–3 insight blocks**, one per distinct signal. Only generate blocks
 
 ## Step 6 — Choose the Slack channel
 
-Read config:
-- Use `marketing_channel` if set
-- Otherwise fall back to `default_channel`
+Resolve the posting channel from config:
 
-If `auto_post: true` AND a channel is available → proceed immediately.
+```bash
+python3 -c "
+import json, os
+with open(os.path.expanduser('~/mnt/.read-ai-summary-config.json')) as f:
+    c = json.load(f)
+ch_id   = c.get('marketing_channel')   or c.get('default_channel')
+ch_name = c.get('marketing_channel_name') or c.get('default_channel_name', '#general')
+auto    = c.get('auto_post', False)
+print('CH_ID='   + str(ch_id))
+print('CH_NAME=' + str(ch_name))
+print('AUTO='    + str(auto))
+"
+```
 
-If `auto_post: false` → show the user a preview of all insight blocks and ask: "Ready to post [N] insight(s) to <#channel-name>?" Wait for confirmation.
+Priority: `marketing_channel` → `default_channel`. If neither is set, ask the user which channel to post to.
+
+If `AUTO=True` AND a channel is available → proceed immediately.
+
+If `AUTO=False` → show the user a preview of all insight blocks and ask: "Ready to post [N] insight(s) to <#channel-name>?" Wait for confirmation.
 
 ---
 
@@ -124,11 +138,11 @@ Append the meeting ID to `marketing_posted_meeting_ids` in config (separate from
 
 ```bash
 python3 -c "
-import json
-with open('$HOME/mnt/.read-ai-summary-config.json', 'r') as f:
+import json, os
+with open(os.path.expanduser('~/mnt/.read-ai-summary-config.json'), 'r') as f:
     config = json.load(f)
 config.setdefault('marketing_posted_meeting_ids', []).append('<MEETING_ID>')
-with open('$HOME/mnt/.read-ai-summary-config.json', 'w') as f:
+with open(os.path.expanduser('~/mnt/.read-ai-summary-config.json'), 'w') as f:
     json.dump(config, f, indent=2)
 "
 ```
