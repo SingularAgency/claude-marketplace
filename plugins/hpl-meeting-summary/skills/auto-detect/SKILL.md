@@ -51,7 +51,7 @@ The lock is released at the very end of Step 7, regardless of outcome.
 
 ## Step 2 — Load config
 
-Read `~/mnt/.read-ai-summary-config.json` using Bash.
+Read `~/mnt/.claude/.read-ai-summary-config.json` using Bash.
 
 Extract:
 - `setup_complete` — must be `true`
@@ -100,7 +100,7 @@ For each remaining (external) meeting, run this dedup sequence. A meeting advanc
 python3 -c "
 import json, os, sys
 meeting_id = sys.argv[1]
-path = os.path.expanduser('~/mnt/.read-ai-summary-config.json')
+path = os.path.expanduser('~/mnt/.claude/.read-ai-summary-config.json')
 with open(path) as f:
     c = json.load(f)
 
