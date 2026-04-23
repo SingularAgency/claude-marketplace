@@ -1,9 +1,17 @@
 {
   "name": "hpl-meeting-summary",
-  "version": "0.2.0",
-  "description": "Automatically generates structured meeting summaries from Read AI and posts them to Slack after every call — with key context, action items, next steps, and timeline.",
+  "version": "0.3.0",
+  "description": "Automatically generates structured meeting summaries AND ICP qualification analyses from Read AI \u2014 posted to Slack independently after every client call.",
   "author": {
     "name": "Singular Agency"
   },
-  "keywords": ["read-ai", "meetings", "summaries", "slack", "sales"]
+  "keywords": [
+    "read-ai",
+    "meetings",
+    "summaries",
+    "slack",
+    "sales",
+    "icp",
+    "qualification"
+  ]
 }
