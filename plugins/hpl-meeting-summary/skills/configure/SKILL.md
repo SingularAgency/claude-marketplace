@@ -17,7 +17,7 @@ metadata:
 
 # Configure HPL Meeting Summary Plugin
 
-Manage all preferences for how and where each analysis is posted. All settings are saved to `~/mnt/.claude/.read-ai-summary-config.json`.
+Manage all preferences for how and where each analysis is posted. All settings are saved to `~/mnt/Claude/.read-ai-summary-config.json`.
 
 ## Full Config Schema
 
@@ -79,7 +79,7 @@ Manage all preferences for how and where each analysis is posted. All settings a
 
 ## Step 1 — Read current config
 
-Read `~/mnt/.claude/.read-ai-summary-config.json` using Bash. Display a clean summary:
+Read `~/mnt/Claude/.read-ai-summary-config.json` using Bash. Display a clean summary:
 
 ```
 📋 Current Configuration:
@@ -218,7 +218,7 @@ Always read the file first, apply changes, then write back — never overwrite t
 ```bash
 python3 -c "
 import json
-path = '~/mnt/.claude/.read-ai-summary-config.json'
+path = '~/mnt/Claude/.read-ai-summary-config.json'
 with open(path, 'r') as f:
     config = json.load(f)
 # Apply targeted changes here

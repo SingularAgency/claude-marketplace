@@ -18,7 +18,7 @@ Fetch a meeting from Read AI, generate a structured summary, and post it to Slac
 
 ## Step 0 — First-run check
 
-Read `~/mnt/.claude/.read-ai-summary-config.json` using Bash.
+Read `~/mnt/Claude/.read-ai-summary-config.json` using Bash.
 
 If the file does not exist OR `setup_complete` is not `true`:
 → Tell the user: "It looks like this is your first time using the meeting summary plugin. Let me run the setup first."
@@ -141,7 +141,7 @@ Resolve the posting channel from config. Use this Python snippet to determine th
 ```bash
 python3 -c "
 import json, os
-with open(os.path.expanduser('~/mnt/.claude/.read-ai-summary-config.json')) as f:
+with open(os.path.expanduser('~/mnt/Claude/.read-ai-summary-config.json')) as f:
     c = json.load(f)
 ch_id   = c.get('summary_channel')   or c.get('default_channel')
 ch_name = c.get('summary_channel_name') or c.get('default_channel_name', '#general')
@@ -196,10 +196,10 @@ After both Slack messages are successfully posted, add the meeting ID to `posted
 ```bash
 python3 -c "
 import json, os
-with open(os.path.expanduser('~/mnt/.claude/.read-ai-summary-config.json'), 'r') as f:
+with open(os.path.expanduser('~/mnt/Claude/.read-ai-summary-config.json'), 'r') as f:
     config = json.load(f)
 config.setdefault('posted_meeting_ids', []).append('<MEETING_ID>')
-with open(os.path.expanduser('~/mnt/.claude/.read-ai-summary-config.json'), 'w') as f:
+with open(os.path.expanduser('~/mnt/Claude/.read-ai-summary-config.json'), 'w') as f:
     json.dump(config, f, indent=2)
 "
 ```

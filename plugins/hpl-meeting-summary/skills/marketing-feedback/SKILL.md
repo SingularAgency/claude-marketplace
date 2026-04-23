@@ -22,7 +22,7 @@ Fetch a meeting from Read AI, analyze it as a Senior Product Marketing Strategis
 
 ## Step 0 — First-run check
 
-Read `~/mnt/.claude/.read-ai-summary-config.json` using Bash.
+Read `~/mnt/Claude/.read-ai-summary-config.json` using Bash.
 
 If the file does not exist OR `setup_complete` is not `true`:
 → Tell the user: "The HPL meeting plugin hasn't been set up yet. Please run the `setup` skill first."
@@ -92,7 +92,7 @@ Resolve the posting channel from config:
 ```bash
 python3 -c "
 import json, os
-with open(os.path.expanduser('~/mnt/.claude/.read-ai-summary-config.json')) as f:
+with open(os.path.expanduser('~/mnt/Claude/.read-ai-summary-config.json')) as f:
     c = json.load(f)
 ch_id   = c.get('marketing_channel')   or c.get('default_channel')
 ch_name = c.get('marketing_channel_name') or c.get('default_channel_name', '#general')
@@ -139,10 +139,10 @@ Append the meeting ID to `marketing_posted_meeting_ids` in config (separate from
 ```bash
 python3 -c "
 import json, os
-with open(os.path.expanduser('~/mnt/.claude/.read-ai-summary-config.json'), 'r') as f:
+with open(os.path.expanduser('~/mnt/Claude/.read-ai-summary-config.json'), 'r') as f:
     config = json.load(f)
 config.setdefault('marketing_posted_meeting_ids', []).append('<MEETING_ID>')
-with open(os.path.expanduser('~/mnt/.claude/.read-ai-summary-config.json'), 'w') as f:
+with open(os.path.expanduser('~/mnt/Claude/.read-ai-summary-config.json'), 'w') as f:
     json.dump(config, f, indent=2)
 "
 ```
