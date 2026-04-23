@@ -3,7 +3,7 @@ name: setup
 description: >
   Use this skill when the user says "set up the meeting summary plugin", "first time setup",
   "configure the plugin for the first time", "initialize the plugin",
-  or when no config file exists at ~/mnt/.claude/.read-ai-summary-config.json and the user tries to
+  or when no config file exists at ~/mnt/Claude/.read-ai-summary-config.json and the user tries to
   run any analysis for the first time. Also trigger if the plugin says it is not working.
 metadata:
   version: "0.2.0"
@@ -13,6 +13,36 @@ metadata:
 # Setup — HPL Meeting Summary Plugin
 
 Guided first-time setup. Verifies both MCP connections, configures channel routing for all three analyses, assigns accountable team members, and creates the hourly scheduled task. Complete every step before allowing the user to use any skill or the agent.
+
+---
+
+## Step 0 — Verify persistent folder is connected
+
+Before anything else, check whether `~/mnt/Claude/` is accessible:
+
+```bash
+python3 -c "
+import os
+path = os.path.expanduser('~/mnt/Claude')
+if os.path.isdir(path):
+    print('FOLDER_OK')
+else:
+    print('FOLDER_MISSING')
+"
+```
+
+- **FOLDER_OK** → Continue to Step 1.
+- **FOLDER_MISSING** → Tell the user:
+
+  > "To save your settings across sessions, I need access to a folder called **Claude** in your Documents.
+  >
+  > **On Mac:** Open Finder → Documents → create a folder named `Claude` if it doesn't exist, then in Cowork click the folder icon (top left) and select that folder.
+  >
+  > **On Windows:** It's usually at `Documents\Claude` — Cowork may have already connected it. If not, click the folder icon and select it.
+  >
+  > Once connected, come back and run setup again."
+
+  → Stop. Do not continue until the folder is connected.
 
 ---
 
@@ -105,7 +135,7 @@ After the four defaults, ask: "Any other tech categories to add? Format: 'Zapier
 
 ## Step 7 — Write config file
 
-Write the full config to `~/mnt/.claude/.read-ai-summary-config.json`:
+Write the full config to `~/mnt/Claude/.read-ai-summary-config.json`:
 
 ```bash
 python3 -c "
@@ -154,7 +184,7 @@ config = {
   'marketing_posted_meeting_ids': [],
   'agent_processed_meeting_ids': []
 }
-path = os.path.expanduser('~/mnt/.claude/.read-ai-summary-config.json')
+path = os.path.expanduser('~/mnt/Claude/.read-ai-summary-config.json')
 with open(path, 'w') as f:
     json.dump(config, f, indent=2)
 print('Config written.')

@@ -40,7 +40,7 @@ hpl-meeting-summary/
 
 ## Config
 
-All settings live in `~/mnt/.claude/.read-ai-summary-config.json`. Key fields:
+All settings live in `~/mnt/Claude/.read-ai-summary-config.json`. Key fields:
 
 ```json
 {
