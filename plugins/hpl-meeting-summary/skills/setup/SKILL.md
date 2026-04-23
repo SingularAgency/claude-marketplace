@@ -2,78 +2,87 @@
 name: setup
 description: >
   Use this skill when the user says "set up the meeting summary plugin", "first time setup",
-  "configure the plugin for the first time", "install Read AI summary", "initialize the plugin",
-  or when no config file exists at ~/mnt/.read-ai-summary-config.json and the user tries to generate
-  a summary for the first time. Also trigger if the user says summaries are not working.
+  "configure the plugin for the first time", "initialize the plugin",
+  or when no config file exists at ~/mnt/.read-ai-summary-config.json and the user tries to
+  run any analysis for the first time. Also trigger if the plugin says it is not working.
 metadata:
-  version: "0.1.0"
+  version: "0.2.0"
   author: "Singular Agency"
 ---
 
-# Setup — Read AI Meeting Summary Plugin
+# Setup — HPL Meeting Summary Plugin
 
-Run this guided setup to verify all integrations are connected and configure where summaries will be posted. Complete every step before allowing the user to use the generate-summary skill.
+Guided first-time setup. Verifies both MCP connections, configures channel routing for all three analyses, assigns accountable team members, and creates the hourly scheduled task. Complete every step before allowing the user to use any skill or the agent.
 
 ---
 
 ## Step 1 — Check Read AI MCP connection
 
-Attempt to call `list_meetings` with `limit: 1`.
+Call `list_meetings` with `limit: 1`.
 
-**If the tool is not available** (you get a "tool not found", "unknown tool", or similar error):
-→ Show the Read AI MCP installation guide from `references/readai-install-guide.md` and stop.
-→ Tell the user: "The Read AI integration is not connected yet. Follow the steps above to install it, then come back and say 'set up the meeting summary plugin' to continue."
-
-**If the tool returns an authentication error** (unauthorized, invalid token):
-→ Tell the user: "Read AI is installed but not authenticated. Go to your Cowork plugin settings and add your Read AI API key, then try again."
-
-**If the tool returns data successfully**:
-→ Tell the user: "✅ Read AI is connected." and continue to Step 2.
+- **Tool not found / unknown tool** → show `references/readai-install-guide.md` and stop. Tell the user to come back after installing.
+- **Auth error** → tell the user to add their Read AI API key in Cowork plugin settings.
+- **Success** → "✅ Read AI is connected." Continue.
 
 ---
 
 ## Step 2 — Check Slack MCP connection
 
-Check whether `slack_send_message` is available as a tool in scope.
+Check whether `slack_send_message` is available.
 
-**If not available**:
-→ Show the Slack install guide from `references/slack-install-guide.md` and stop.
-→ Tell the user: "Slack is not connected yet. Follow the steps above to install it, then come back to finish setup."
-
-**If available**:
-→ Tell the user: "✅ Slack is connected." and continue to Step 3.
+- **Not available** → show `references/slack-install-guide.md` and stop.
+- **Available** → "✅ Slack is connected." Continue.
 
 ---
 
-## Step 3 — Configure default Slack channel
+## Step 3 — Configure channel routing
 
-Ask the user: "Which Slack channel should meeting summaries be posted to by default?"
+The plugin posts three independent analyses to Slack. Each can go to a different channel.
 
-Use `slack_search_channels` with the user's input to find matching channels. Show up to 5 results with their names and descriptions, and ask the user to confirm the right one.
+Tell the user:
 
-Save the confirmed channel ID and name.
+> "Let's configure where each analysis gets posted. I'll suggest defaults — just confirm or give me a different channel name."
+
+Ask about each in order, searching Slack for the channel if the user provides a name:
+
+**3a. Summary channel** (Strategic call breakdown)
+- Suggested default: `#test-map`
+- Ask: "Where should the *Strategic Summary* be posted? (default: #test-map)"
+- Use `slack_search_channels` to find the channel ID. Confirm with the user.
+
+**3b. ICP channel** (Qualification analysis)
+- Suggested default: `#test-map` (same channel as summary — ICP posts right after)
+- Ask: "Where should the *ICP Qualification* be posted? (default: #test-map, same as summary)"
+- If the user confirms `#test-map`, reuse the ID from 3a — no need to re-search.
+
+**3c. Marketing Feedback channel**
+- Suggested default: `#marketing-feedback`
+- Ask: "Where should *Marketing Feedback* be posted? (default: #marketing-feedback)"
+- Use `slack_search_channels` to find the channel ID. Confirm.
+
+**3d. Fallback / default channel**
+- Set `default_channel` to the Summary channel ID (used as fallback if any specific channel is not set).
+
+Save all four: `default_channel`, `summary_channel`, `icp_channel`, `marketing_channel`.
 
 ---
 
-## Step 4 — Configure posting behavior
+## Step 4 — Configure posting behaviour
 
-Ask the user: "Should I post summaries automatically when I detect a new client meeting, or always show you a preview first?"
+Ask: "Should analyses post automatically when I detect a new client meeting, or always show a preview first?"
 
-Options:
-- **Auto-post**: posts immediately to the default channel, no confirmation needed
-- **Preview first**: shows the formatted summary and asks before posting (recommended for new users)
+- **Auto-post**: posts immediately, no confirmation. Recommended for scheduled runs.
+- **Preview first**: shows the output and asks before posting.
 
-Save the preference as `auto_post: true` or `auto_post: false`.
+Save as `auto_post: true` or `auto_post: false`.
 
 ---
 
-## Step 5 — Ask for internal team domain
+## Step 5 — Internal team domain
 
-Ask the user: "What's your company email domain? This lets me automatically skip internal meetings and only post summaries for client calls."
+Ask: "What's your company email domain? I'll use it to skip internal-only meetings."
 
-Example: `singularagency.co`
-
-If the user skips, default to `singularagency.co`.
+Default: `singularagency.co`. If the user skips, use the default.
 
 ---
 
@@ -81,93 +90,92 @@ If the user skips, default to `singularagency.co`.
 
 Tell the user:
 
-"Now let's set up who gets tagged in summaries based on the type of project. For each technology category, tell me the team member responsible — you can type their name or Slack @handle, and I'll look them up."
+> "Now let's set up who gets tagged in the Summary thread based on the project type. Tell me the team member responsible for each — I'll look them up in Slack."
 
-Go through each technology one at a time. For each one, ask:
+Go through each one at a time. Use `slack_search_users` to resolve each name/handle. Confirm match (name + email). Accept multiple people per category as an array.
 
-> "Who will be the accountable for **[Technology]** leads?"
+1. **Airtable** — no-code database, Airtable automations
+2. **FlutterFlow** — mobile apps, Flutter development
+3. **AI Custom Integration** — Claude, OpenAI, GPT, LLM workflows, AI automation
+4. **FullStack** — React, Node.js, backend APIs, web apps
 
-Technologies to assign (ask in this order):
-
-1. **Airtable** — e.g., no-code database, Airtable automations, Airtable integrations
-2. **FlutterFlow** — e.g., mobile apps, Flutter development, FlutterFlow builds
-3. **AI Custom Integration** — e.g., Claude agents, OpenAI, GPT, LLM workflows, AI automation
-4. **FullStack** — e.g., React, Node.js, backend APIs, web apps, custom dev
-
-For each answer:
-- Use `slack_search_users` to find the person by name or handle
-- Show the match (name + email) and confirm with the user
-- If the user types a Slack ID directly (format: `U` followed by alphanumerics), use it as-is without searching
-- If the user says "skip" or "same as previous", handle accordingly
-- If a single category has multiple accountables (e.g., "William and Fabian"), collect both user IDs as an array
-
-After all 4 are assigned, ask:
-
-> "Do you have any other technology categories to add? For example: 'Zapier — @name' or 'WordPress — @name'. Say 'done' when finished."
-
-Accept freeform additions until the user says "done" or "no".
+After the four defaults, ask: "Any other tech categories to add? Format: 'Zapier — @name'. Say 'done' when finished."
 
 ---
 
 ## Step 7 — Write config file
 
-Write the complete config to `~/mnt/.read-ai-summary-config.json`:
+Write the full config to `~/mnt/.read-ai-summary-config.json`:
 
 ```bash
-cat > ~/mnt/.read-ai-summary-config.json << 'EOF'
-{
-  "default_channel": "<CHANNEL_ID>",
-  "default_channel_name": "<#channel-name>",
-  "auto_post": <true|false>,
-  "internal_domain": "<domain.com>",
-  "mention_users": [],
-  "posted_meeting_ids": [],
-  "role_assignments": {
-    "airtable": {
-      "label": "Airtable",
-      "user_ids": ["<SLACK_USER_ID>"],
-      "names": ["<Full Name>"],
-      "keywords": ["airtable", "no-code database", "airtable automation"]
+python3 -c "
+import json, os
+config = {
+  'setup_complete': True,
+  'auto_post': <true|false>,
+  'internal_domain': '<domain.com>',
+  'default_channel': '<SUMMARY_CHANNEL_ID>',
+  'default_channel_name': '<#channel-name>',
+  'summary_channel': '<SUMMARY_CHANNEL_ID>',
+  'summary_channel_name': '<#channel-name>',
+  'icp_channel': '<ICP_CHANNEL_ID>',
+  'icp_channel_name': '<#channel-name>',
+  'marketing_channel': '<MARKETING_CHANNEL_ID>',
+  'marketing_channel_name': '<#channel-name>',
+  'mention_users': [],
+  'role_assignments': {
+    'airtable': {
+      'label': 'Airtable',
+      'user_ids': ['<SLACK_USER_ID>'],
+      'names': ['<Full Name>'],
+      'keywords': ['airtable', 'no-code database', 'airtable automation']
     },
-    "flutterflow": {
-      "label": "FlutterFlow",
-      "user_ids": ["<SLACK_USER_ID>"],
-      "names": ["<Full Name>"],
-      "keywords": ["flutterflow", "flutter", "flutter flow", "mobile app"]
+    'flutterflow': {
+      'label': 'FlutterFlow',
+      'user_ids': ['<SLACK_USER_ID>'],
+      'names': ['<Full Name>'],
+      'keywords': ['flutterflow', 'flutter', 'flutter flow', 'mobile app']
     },
-    "ai_custom": {
-      "label": "AI Custom Integration",
-      "user_ids": ["<SLACK_USER_ID>"],
-      "names": ["<Full Name>"],
-      "keywords": ["claude", "openai", "gpt", "llm", "ai agent", "ai automation", "custom ai", "ai integration", "langchain", "cowork"]
+    'ai_custom': {
+      'label': 'AI Custom Integration',
+      'user_ids': ['<SLACK_USER_ID>'],
+      'names': ['<Full Name>'],
+      'keywords': ['claude', 'openai', 'gpt', 'llm', 'ai agent', 'ai automation', 'custom ai', 'langchain', 'cowork']
     },
-    "fullstack": {
-      "label": "FullStack",
-      "user_ids": ["<SLACK_USER_ID>"],
-      "names": ["<Full Name>"],
-      "keywords": ["react", "node", "nodejs", "backend", "frontend", "web app", "api", "fullstack", "full-stack", "full stack"]
+    'fullstack': {
+      'label': 'FullStack',
+      'user_ids': ['<SLACK_USER_ID>'],
+      'names': ['<Full Name>'],
+      'keywords': ['react', 'node', 'nodejs', 'backend', 'frontend', 'web app', 'api', 'fullstack', 'full-stack']
     }
   },
-  "setup_complete": true
+  'posted_meeting_ids': [],
+  'icp_posted_meeting_ids': [],
+  'marketing_posted_meeting_ids': [],
+  'agent_processed_meeting_ids': []
 }
-EOF
+path = os.path.expanduser('~/mnt/.read-ai-summary-config.json')
+with open(path, 'w') as f:
+    json.dump(config, f, indent=2)
+print('Config written.')
+"
 ```
 
-Replace all placeholder values with the actual user answers. If a category has multiple accountables, include all user IDs in the array. Include any additional custom categories the user added, following the same schema.
+Replace all placeholders with the actual values collected in Steps 3–6. Include any custom tech categories added in Step 6.
 
 ---
 
-## Step 8 — Create the scheduled task
+## Step 8 — Create the hourly scheduled task
 
-Use the `create_scheduled_task` tool to set up the 5-minute auto-detection loop:
+Use `create_scheduled_task` to set up the automatic detection loop:
 
 ```
-name: "Read AI Meeting Auto-Detect"
-prompt: "Run the auto-detect skill to check for new completed client meetings from Read AI and post their summaries to Slack."
-schedule: "*/5 * * * *"
+name: "HPL Meeting Auto-Detect"
+prompt: "Run the hpl-meeting-summary auto-detect skill to check for new completed client meetings from the last hour and run the full analysis (Summary, ICP, Marketing Feedback) for each one."
+schedule: "0 * * * *"
 ```
 
-This creates a background task that checks for new client meetings every 5 minutes. It will silently skip internal meetings, skip meetings already posted, and skip meetings whose Read AI summary isn't ready yet.
+This runs every hour. The skill scans the past hour for new client meetings and delegates each to the `meeting-analyst` agent.
 
 ---
 
@@ -177,22 +185,24 @@ Tell the user:
 
 "🎉 You're all set! Here's your configuration:
 
-- **Channel**: <#channel-name>
-- **Auto-post**: <enabled/disabled>
-- **Internal domain**: @<domain.com> (internal-only meetings will be skipped)
-- **Auto-detection**: running every 5 minutes in the background
+📋 **Summary** → <#summary-channel>
+🎯 **ICP Qualification** → <#icp-channel>
+📊 **Marketing Feedback** → <#marketing-channel>
+
+**Auto-post:** <enabled / disabled>
+**Internal domain:** @<domain.com>
+**Auto-detection:** running every hour
 
 **Accountable by project type:**
-- Airtable → <Name(s)>
-- FlutterFlow → <Name(s)>
-- AI Custom Integration → <Name(s)>
-- FullStack → <Name(s)>
+• Airtable → <Name(s)>
+• FlutterFlow → <Name(s)>
+• AI Custom Integration → <Name(s)>
+• FullStack → <Name(s)>
 <any custom categories>
 
-When a new client meeting comes in, I'll detect the project type, tag the right person in the Slack thread, and post the full breakdown automatically.
-
-To post a summary manually anytime, say:
+After each client meeting, I'll automatically run all three analyses and post them in order. To run any analysis manually, use:
 👉 *'Summarize my last meeting'*
-👉 *'Post the call breakdown for [client name]'*
+👉 *'Run ICP analysis for [client]'*
+👉 *'Marketing feedback for [client]'*
 
-To update assignments or settings, say *'Configure the meeting summary plugin'*."
+To update settings, say *'Configure the meeting summary plugin'*."

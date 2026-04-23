@@ -1,69 +1,73 @@
-# Read AI Meeting Summary
+# hpl-meeting-summary
 
-Automatically generate structured call breakdowns from Read AI and post them to Slack — with client context, core direction, action items, and next steps. Designed for the Singular Agency sales and delivery workflow.
+Post-meeting analysis suite for Singular Innovation. After every client call, the `meeting-analyst` agent runs three independent analyses from a single Read AI session and posts each as a separate Slack thread.
 
-## What it does
+## Architecture
 
-After every meeting, trigger this plugin to:
+```
+hpl-meeting-summary/
+├── .claude-plugin/
+│   └── plugin.json
+├── agents/
+│   └── meeting-analyst.md     ← orchestrator: runs all 3 analyses
+└── skills/
+    ├── auto-detect/            ← scheduled: detects new meetings → delegates to agent
+    ├── generate-summary/       ← manual: strategic call breakdown
+    ├── icp-qualification/      ← manual: Singular Innovation ICP analysis
+    ├── marketing-feedback/     ← manual: positioning & messaging insights
+    ├── configure/              ← manage channel routing & role assignments
+    └── setup/                  ← first-time setup
+```
 
-1. Pull the meeting data from Read AI (summary, topics, chapter breakdown, action items, key questions)
-2. Generate a structured Slack post tailored to the meeting type (sales call, internal sync, or one-on-one)
-3. Post it to your configured Slack channel
+## What gets posted after every meeting
 
-The output format mirrors Tyler's manual call breakdown style — giving anyone on the team instant context without having to read the full transcript.
+| Output | Slack format | Channel config key |
+|--------|-------------|-------------------|
+| 📋 Strategic Summary | Headline + full call breakdown thread | `summary_channel` → `default_channel` |
+| 🎯 ICP Qualification | Headline + cohort report thread | `icp_channel` → `default_channel` |
+| 📊 Marketing Feedback | Headline + 1–3 insight blocks as thread replies | `marketing_channel` → `default_channel` |
 
 ## Skills
 
-### `generate-summary`
-Fetches your most recent Read AI meeting (or one you specify by client/title), generates the formatted summary, and posts it to Slack.
+| Skill | How to trigger | What it does |
+|-------|---------------|--------------|
+| `auto-detect` | Scheduled task (every 5–10 min) | Detects new meetings, delegates to agent |
+| `generate-summary` | "summarize my last meeting" | Strategic call breakdown, manual |
+| `icp-qualification` | "run ICP analysis for [client]" | Full ICP qualification, manual |
+| `marketing-feedback` | "marketing feedback for [client]" | Positioning & messaging insights, manual |
+| `configure` | "configure the plugin" | Channel routing, role assignments, tags |
+| `setup` | "set up the plugin" | First-time setup |
 
-**Trigger phrases:**
-- "Summarize my last meeting"
-- "Post the meeting summary to Slack"
-- "Generate a call breakdown for [client name]"
-- "Share the recap from the Travelog call"
+## Config
 
-### `configure`
-Manage your posting preferences — default Slack channel, auto-post behavior, and who gets @-mentioned.
-
-**Trigger phrases:**
-- "Set my default channel to #hpl-general"
-- "Turn on auto-post"
-- "Tag Tyler in all meeting summaries"
-- "Show my meeting summary settings"
-
-## Setup
-
-No environment variables required — this plugin uses your already-connected Read AI and Slack integrations.
-
-**First-time setup (optional but recommended):**
-
-Tell Claude: *"Configure the meeting summary plugin"* to set your default Slack channel and auto-post preference. Without configuration, you'll be asked to confirm the channel each time.
-
-## Output formats
-
-The plugin generates three formats based on meeting type:
-
-| Meeting Type | Format |
-|---|---|
-| External client / sales call | Full breakdown (context, direction, action items, next steps) |
-| Internal team sync (3+ people) | Compact recap (decisions, action items, blockers) |
-| One-on-one | Minimal (decisions + action items only) |
-
-## Configuration file
-
-Settings are stored at `~/mnt/.read-ai-summary-config.json`:
+All settings live in `~/mnt/.read-ai-summary-config.json`. Key fields:
 
 ```json
 {
-  "default_channel": "C0123456789",
-  "default_channel_name": "#hpl-general",
-  "auto_post": false,
-  "mention_users": []
+  "setup_complete": true,
+  "auto_post": true,
+  "internal_domain": "singularagency.co",
+  "default_channel": "CXXXXXXXX",
+  "summary_channel": "CXXXXXXXX",
+  "icp_channel": "CXXXXXXXX",
+  "marketing_channel": "CXXXXXXXX",
+  "mention_users": [],
+  "role_assignments": {},
+  "agent_processed_meeting_ids": [],
+  "posted_meeting_ids": [],
+  "icp_posted_meeting_ids": [],
+  "marketing_posted_meeting_ids": []
 }
 ```
 
-## Requirements
+The four `*_channel` keys are optional — all fall back to `default_channel`. Set them to route each output to a dedicated Slack channel (e.g. `#sales-briefings`, `#sales-qualification`, `#marketing-insights`).
 
-- Read AI MCP connected (provides `list_meetings`, `get_meeting_by_id`)
-- Slack MCP connected (provides `slack_send_message`, `slack_search_channels`)
+## Prerequisites
+
+- Read AI connector active
+- Slack connector active
+- Run `hpl-meeting-summary:setup` on first use
+
+## Scheduled task
+
+Create a scheduled task pointing to `hpl-meeting-summary:auto-detect` every hour. Use the `schedule` skill to set this up.

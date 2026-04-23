@@ -136,10 +136,26 @@ The summary body will be posted as a **thread reply** — NOT the main message.
 
 ## Step 6 — Choose the Slack channel
 
-Read `default_channel` and `auto_post` from config.
+Resolve the posting channel from config. Use this Python snippet to determine the channel:
 
-- If `auto_post: true` AND `default_channel` is set → post immediately without asking.
-- If `auto_post: false` OR no default channel → show the user a preview of both the headline and the summary body (including the accountable tag), confirm the channel, then post.
+```bash
+python3 -c "
+import json, os
+with open(os.path.expanduser('~/mnt/.read-ai-summary-config.json')) as f:
+    c = json.load(f)
+ch_id   = c.get('summary_channel')   or c.get('default_channel')
+ch_name = c.get('summary_channel_name') or c.get('default_channel_name', '#general')
+auto    = c.get('auto_post', False)
+print('CH_ID='   + str(ch_id))
+print('CH_NAME=' + str(ch_name))
+print('AUTO='    + str(auto))
+"
+```
+
+Priority: `summary_channel` → `default_channel`. If neither is set, ask the user which channel to post to.
+
+- If `AUTO=True` AND channel is known → post immediately without asking.
+- If `AUTO=False` → show a preview of both the headline and the summary body (including the accountable tag), confirm the channel, then post.
 
 To confirm: "I'll post this to <#channel-name>. Ready?" Wait for user confirmation unless `auto_post` is on.
 
@@ -179,11 +195,11 @@ After both Slack messages are successfully posted, add the meeting ID to `posted
 
 ```bash
 python3 -c "
-import json
-with open('$HOME/mnt/.read-ai-summary-config.json', 'r') as f:
+import json, os
+with open(os.path.expanduser('~/mnt/.read-ai-summary-config.json'), 'r') as f:
     config = json.load(f)
 config.setdefault('posted_meeting_ids', []).append('<MEETING_ID>')
-with open('$HOME/mnt/.read-ai-summary-config.json', 'w') as f:
+with open(os.path.expanduser('~/mnt/.read-ai-summary-config.json'), 'w') as f:
     json.dump(config, f, indent=2)
 "
 ```

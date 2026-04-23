@@ -1,228 +1,187 @@
 ---
 name: auto-detect
 description: >
-  This skill runs automatically on a schedule every 5 minutes to detect new completed client meetings
-  from Read AI and post their summaries to Slack. It should NOT be triggered manually by the user —
-  it is called exclusively by the scheduled task. It filters out internal meetings (same company domain),
-  skips already-posted meetings, and prevents duplicates by tracking posted meeting IDs.
+  This skill runs automatically on a schedule every hour to detect new completed
+  client meetings from Read AI and trigger the meeting-analyst agent for each one.
+  The agent runs all three analyses (Summary, ICP Qualification, Marketing Feedback)
+  and posts each independently to Slack. This skill should NOT be triggered manually —
+  it is called exclusively by the scheduled task.
 metadata:
-  version: "0.1.0"
+  version: "0.3.0"
   author: "Singular Agency"
 ---
 
 # Auto-Detect New Client Meetings
 
-This skill runs silently on a schedule. It checks Read AI for newly completed meetings, filters to client-only calls, avoids duplicates, and posts summaries automatically. Do NOT announce or explain what you're doing — just execute the steps and only speak if a summary is actually posted or a critical error occurs.
+Runs silently on a schedule. Detects newly completed client meetings, applies a multi-layer deduplication check to guarantee no meeting is posted more than once across any analysis, then delegates to the `meeting-analyst` agent.
+
+Do NOT announce or explain what you're doing. Only speak if a meeting is processed or a critical error occurs.
 
 ---
 
-## Step 1 — Load config
+## Step 1 — Concurrency lock (prevent overlapping runs)
+
+Before doing anything else, check for a lock file:
+
+```bash
+python3 -c "
+import os, time
+lock = os.path.expanduser('~/.hpl-meeting-analyst.lock')
+if os.path.exists(lock):
+    age = time.time() - os.path.getmtime(lock)
+    # Stale lock (older than 90 min) — remove and proceed
+    if age > 5400:
+        os.remove(lock)
+        print('STALE_LOCK_REMOVED')
+    else:
+        print('LOCKED')
+else:
+    # Acquire lock
+    open(lock, 'w').write(str(os.getpid()))
+    print('ACQUIRED')
+"
+```
+
+- `LOCKED` → exit silently. Another run is in progress.
+- `STALE_LOCK_REMOVED` or `ACQUIRED` → continue.
+
+The lock is released at the very end of Step 7, regardless of outcome.
+
+---
+
+## Step 2 — Load config
 
 Read `~/mnt/.read-ai-summary-config.json` using Bash.
 
 Extract:
-- `default_channel` — where to post
-- `auto_post` — if false, skip posting silently (user prefers manual triggering)
-- `internal_domain` — e.g. `singularagency.co` (default if not set)
-- `posted_meeting_ids` — array of meeting IDs already posted (deduplication list)
-- `setup_complete` — if not true, do nothing and exit silently
+- `setup_complete` — must be `true`
+- `auto_post` — must be `true`
+- `internal_domain` — default `singularagency.co`
+- `default_channel` — must exist
+- All four tracking arrays:
+  - `agent_processed_meeting_ids`
+  - `posted_meeting_ids`
+  - `icp_posted_meeting_ids`
+  - `marketing_posted_meeting_ids`
 
-**If `setup_complete` is not true, or `default_channel` is not set, or `auto_post` is false**: exit silently. Do not post anything, do not say anything to the user.
+**If `setup_complete` is not `true`, `auto_post` is not `true`, or no channel is set** → release lock and exit silently.
 
 ---
 
-## Step 2 — Fetch recent meetings
+## Step 3 — Fetch recent meetings
 
 Call `list_meetings` with:
 ```
 limit: 10
-start_datetime_gte: <2 hours ago in ISO 8601>
+start_datetime_gte: <1 hour ago in ISO 8601>
 expand: ["summary", "action_items", "key_questions", "topics", "chapter_summaries"]
 ```
 
-To compute "2 hours ago": use `date -u -d '2 hours ago' '+%Y-%m-%dT%H:%M:%SZ'` via Bash.
+Compute "1 hour ago":
+```bash
+date -u -d '1 hour ago' '+%Y-%m-%dT%H:%M:%SZ'
+```
 
 ---
 
-## Step 3 — Filter: skip internal-only meetings
+## Step 4 — Filter: skip internal-only meetings
 
-For each meeting in the response, examine `participants[]`.
-
-**A meeting is "internal"** if ALL participants have an email ending in the `internal_domain` from config (e.g., all end in `@singularagency.co`).
-
-**A meeting is a "client meeting"** if at least ONE participant has a different email domain.
-
-Skip all internal meetings silently. Only continue with client meetings.
+For each meeting, check `participants[]`. If ALL participants share `internal_domain` → skip silently.
 
 ---
 
-## Step 4 — Filter: skip already-posted meetings
+## Step 5 — Multi-layer deduplication per meeting
 
-Apply **two layers** of duplicate detection for each remaining meeting:
+For each remaining (external) meeting, run this dedup sequence. A meeting advances to the agent only if it passes all layers.
 
-**Layer 1 — Check local config (fast path):**
-Check if `meeting.id` exists in `posted_meeting_ids` from config.
-If it does → skip silently. Do not proceed to Layer 2.
-
-**Layer 2 — Search Slack channel for existing summaries (catches manually posted summaries):**
-If the meeting ID is NOT in `posted_meeting_ids`, it may still have been posted manually by a team member. Before posting, search Slack to verify.
-
-First, infer `ClientName` from participants: the external participant's company name (anyone with a domain different from `internal_domain`). If only one external person, use their full name. If multiple, infer from their email domain (e.g., `viapromeds.com` → `ViaproMeds`).
-
-Call `slack_search_public_and_private` with:
-```
-"Call Breakdown" "[ClientName]"
-```
-
-Also try a second search with the meeting title:
-```
-"[MeetingTitle]"
-```
-
-**Evaluate results:**
-- If any message contains `"Call Breakdown"` and references the client name → treat as already posted.
-- Immediately add `meeting.id` to `posted_meeting_ids` in config (same write-back as Step 7) so it won't be rechecked next cycle.
-- Skip silently.
-
-**If no matching message is found** → this is a genuinely new, unposted client meeting. Continue to Step 5.
-
----
-
-## Step 5 — Check meeting is complete enough to summarize
-
-Only post summaries for meetings that have a non-empty `summary` field. A meeting that just ended may not have been processed by Read AI yet.
-
-If `summary` is null or empty string → skip this meeting silently for now. It will be retried on the next 5-minute cycle.
-
----
-
-## Step 6 — Generate summary and post to Slack
-
-For each valid new meeting:
-
-**6a. Identify Project Name and Client Name**
-
-- **Client Name**: The name of the external participant (different domain). If multiple external participants, use the company name inferred from their email domain (e.g., `viapromeds.com` → `ViaproMeds`). Use the participant's full name if only one external person.
-- **Project Name**: Infer from the meeting `title` or `folders[]`. If ambiguous, use the external company name.
-
-**Headline**: `ProjectName — ClientName`
-
-**6b. Detect technology type and accountable team member**
-
-Read `role_assignments` from config. Search the meeting's `title`, `topics[]`, `summary`, and `chapter_summaries[]` for keyword matches against each category's `keywords` array (case-insensitive).
-
-Collect all matching `user_ids` across matched categories. If multiple tech types match, include all accountables with their category label.
-
-**6c. Generate summary body**
-
-Compose a **full, detailed strategic brief** using the meeting data. This is NOT a quick recap — it must give someone who wasn't on the call a complete picture. Extract the maximum detail from all available fields: `summary`, `topics[]`, `chapter_summaries[]`, `action_items[]`, and `key_questions[]`.
-
-Use this format:
-
-```
-<@USER_ID> <@USER_ID2>
-
-📋 *Call Breakdown — [ClientName]*
-
-*Who They Are*
-[2–4 sentences: who the client is, what their business does, their role, their technical sophistication, and relevant context about where they are in their journey. Be specific.]
-
-*Context & Current State*
-[2–4 sentences: what tools or systems they currently use, what their workflow looks like today, and what is NOT working. Name specific tools and platforms.]
-
-*Pain Points*
-[Number each pain point. Include a direct quote if available, plus 1–2 sentences on the operational impact. Minimum 3 pain points.]
-
-1. [Pain point title]
-"[Direct quote if available]"
-[Operational impact]
-
-2. [Pain point title]
-"[Direct quote if available]"
-[Operational impact]
-
-3. [Pain point title]
-[Explanation]
-
-*What Was Discussed*
-[One full sentence per chapter/topic — not just titles. Capture what was actually said, decided, or explored.]
-
-• [Topic]: [What was covered and what was decided or left open]
-• [Topic]: [What was covered and what was decided or left open]
-
-*Key Questions Raised*
-[Open questions, blockers, or unresolved items that still need answers.]
-
-• [Question or blocker]
-
-*Options / Directions Considered*
-[Only include if multiple approaches or scopes were discussed.]
-
-Option A — [Name]: [What it is, why it works, any risk]
-Option B — [Name]: [What it is, why it works, any risk]
-
-*Strategic Read*
-[1–3 sentences: honest read on this client — urgency, fit, what will win them, what could lose them. Make a clear recommendation.]
-
-🔴 *Action Items*
-• [Assignee first name]: [specific task — no vague items]
-• [Assignee first name]: [specific task with deadline if mentioned]
-
-🔴 *Next Steps / Timeline*
-• [Specific date or event]: [what happens, what is due]
-• [Specific date or event]: [follow-up or milestone]
-
-🔗 Full report: [report_url]
-```
-
-If no tech type matched, omit the tag line at the top. Never write just one paragraph — all sections are required for client calls.
-
-**6c. Post parent message (headline)**
-
-Call `slack_send_message`:
-- `channel_id`: `default_channel` from config
-- `text`: the headline — `ProjectName — ClientName`
-
-If `mention_users` is non-empty, prepend: `<@USER_ID> | ProjectName — ClientName`
-
-Capture `ts` from the response.
-
-**6d. Post summary as thread reply**
-
-Call `slack_send_message`:
-- `channel_id`: same channel
-- `thread_ts`: the `ts` from step 6c
-- `text`: the full summary body
-
----
-
-## Step 7 — Update posted meeting IDs (prevent duplicates)
-
-After successfully posting both messages, add `meeting.id` to the `posted_meeting_ids` array in config.
-
-Read the current config, append the new ID, and write back:
+### Layer 1 — Local tracking (fast, no network)
 
 ```bash
 python3 -c "
-import json, sys
-with open('$HOME/mnt/.read-ai-summary-config.json', 'r') as f:
-    config = json.load(f)
-config.setdefault('posted_meeting_ids', []).append('<MEETING_ID>')
-with open('$HOME/mnt/.read-ai-summary-config.json', 'w') as f:
-    json.dump(config, f, indent=2)
-"
+import json, os, sys
+meeting_id = sys.argv[1]
+path = os.path.expanduser('~/mnt/.read-ai-summary-config.json')
+with open(path) as f:
+    c = json.load(f)
+
+agent_done  = meeting_id in c.get('agent_processed_meeting_ids', [])
+summary_done = meeting_id in c.get('posted_meeting_ids', [])
+icp_done    = meeting_id in c.get('icp_posted_meeting_ids', [])
+mktg_done   = meeting_id in c.get('marketing_posted_meeting_ids', [])
+all_done    = summary_done and icp_done and mktg_done
+
+print(f'AGENT={agent_done}')
+print(f'SUMMARY={summary_done}')
+print(f'ICP={icp_done}')
+print(f'MARKETING={mktg_done}')
+print(f'ALL_DONE={all_done}')
+" '<MEETING_ID>'
 ```
 
-Replace `<MEETING_ID>` with the actual meeting ID string.
+**Decision table:**
+
+| Condition | Action |
+|-----------|--------|
+| `AGENT=True` | Skip meeting entirely — agent already ran all three |
+| `ALL_DONE=True` | All three individual analyses already posted (manual runs). Write to `agent_processed_meeting_ids` and skip |
+| `SUMMARY=True AND ICP=True AND MARKETING=True` | Same as above |
+| Any combination of partial completion | Pass to agent — agent will skip the already-done analyses and only run the missing ones |
+| All `False` | Genuinely new meeting — continue to Layer 2 |
+
+### Layer 2 — Slack search (catch posts made outside this plugin)
+
+Only run if the meeting was NOT found in any local tracking field (all False from Layer 1).
+
+Infer `ClientName` and `MeetingDate` (format: "Mon Apr 14") from meeting data.
+
+Run two searches:
+```
+slack_search_public_and_private: "Call Breakdown" "[ClientName]"
+slack_search_public_and_private: "ICP Qualification" "[ClientName]"
+```
+
+For each result: check if the message timestamp falls within ±24 hours of `meeting.start_time_ms`. A name match alone is not enough — it must be temporally plausible for this specific meeting.
+
+**If a match is found for ALL three analyses** → mark as fully processed: write to `agent_processed_meeting_ids` and skip.
+
+**If a match is found for SOME analyses** → write those meeting IDs to the relevant individual tracking fields, then pass to agent (agent will skip the already-posted ones).
+
+**If no matches** → pass to agent as genuinely new.
+
+### Layer 3 — Summary presence check
+
+Only process meetings with a non-empty `summary` field. If `summary` is null or empty → skip silently. Read AI hasn't finished processing yet; it will be retried on the next hourly run.
 
 ---
 
-## Step 8 — Silent exit or brief confirmation
+## Step 6 — Delegate to meeting-analyst agent
 
-If no new meetings were found or posted: exit silently. Do not say anything to the user.
+For each meeting that passed all dedup layers, pass to the `meeting-analyst` agent with:
+- `meeting_id`
+- All expanded meeting data (pass through — do not re-fetch)
+- The per-analysis completion flags from Layer 1 so the agent knows which analyses to skip
 
-If a summary was posted: tell the user briefly:
-"📋 Posted a summary for *ProjectName — ClientName* to <#channel-name>. Check the thread for the full breakdown."
+The agent handles running whichever analyses are still pending and writes all tracking fields immediately after each successful post.
 
-If posting failed (Slack error, Read AI error): log the error briefly without alarming the user:
-"⚠️ Tried to post the meeting summary for *[title]* but hit an error: [short error]. I'll retry next cycle."
+---
+
+## Step 7 — Release lock and exit
+
+Always release the lock at the end, regardless of outcome:
+
+```bash
+python3 -c "
+import os
+lock = os.path.expanduser('~/.hpl-meeting-analyst.lock')
+if os.path.exists(lock):
+    os.remove(lock)
+"
+```
+
+If no new meetings were found or processed → exit silently.
+
+If meetings were processed → confirm briefly:
+"✅ Full analysis posted for *[N] meeting(s)*."
+
+If an error occurred → log briefly and release lock:
+"⚠️ Error during auto-detect: [short message]. Lock released."
