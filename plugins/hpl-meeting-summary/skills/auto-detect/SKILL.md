@@ -7,34 +7,68 @@ description: >
   and posts each independently to Slack. This skill should NOT be triggered manually —
   it is called exclusively by the scheduled task.
 metadata:
-  version: "0.2.0"
+  version: "0.3.0"
   author: "Singular Agency"
 ---
 
 # Auto-Detect New Client Meetings
 
-This skill runs silently on a schedule. It detects newly completed client meetings in Read AI, filters out internal-only calls and already-processed ones, then delegates each new meeting to the `meeting-analyst` agent which handles all three analyses.
+Runs silently on a schedule. Detects newly completed client meetings, applies a multi-layer deduplication check to guarantee no meeting is posted more than once across any analysis, then delegates to the `meeting-analyst` agent.
 
 Do NOT announce or explain what you're doing. Only speak if a meeting is processed or a critical error occurs.
 
 ---
 
-## Step 1 — Load config
+## Step 1 — Concurrency lock (prevent overlapping runs)
+
+Before doing anything else, check for a lock file:
+
+```bash
+python3 -c "
+import os, time
+lock = os.path.expanduser('~/.hpl-meeting-analyst.lock')
+if os.path.exists(lock):
+    age = time.time() - os.path.getmtime(lock)
+    # Stale lock (older than 90 min) — remove and proceed
+    if age > 5400:
+        os.remove(lock)
+        print('STALE_LOCK_REMOVED')
+    else:
+        print('LOCKED')
+else:
+    # Acquire lock
+    open(lock, 'w').write(str(os.getpid()))
+    print('ACQUIRED')
+"
+```
+
+- `LOCKED` → exit silently. Another run is in progress.
+- `STALE_LOCK_REMOVED` or `ACQUIRED` → continue.
+
+The lock is released at the very end of Step 7, regardless of outcome.
+
+---
+
+## Step 2 — Load config
 
 Read `~/mnt/.read-ai-summary-config.json` using Bash.
 
 Extract:
-- `setup_complete` — must be `true` to proceed
-- `auto_post` — must be `true` to proceed
+- `setup_complete` — must be `true`
+- `auto_post` — must be `true`
 - `internal_domain` — default `singularagency.co`
-- `agent_processed_meeting_ids` — meetings already handled by the agent
 - `default_channel` — must exist
+- All four tracking arrays:
+  - `agent_processed_meeting_ids`
+  - `posted_meeting_ids`
+  - `icp_posted_meeting_ids`
+  - `marketing_posted_meeting_ids`
 
-**If any of these conditions fail** → exit silently. Do nothing.
+**If `setup_complete` is not `true`, `auto_post` is not `true`, or no channel is set** → release lock and exit silently.
 
 ---
 
-## Step 2 — Fetch recent meetings
+## Step 3 — Fetch recent meetings
 
 Call `list_meetings` with:
 ```
@@ -43,66 +77,111 @@ start_datetime_gte: <1 hour ago in ISO 8601>
 expand: ["summary", "action_items", "key_questions", "topics", "chapter_summaries"]
 ```
 
-Compute "1 hour ago" via Bash:
+Compute "1 hour ago":
 ```bash
 date -u -d '1 hour ago' '+%Y-%m-%dT%H:%M:%SZ'
 ```
 
 ---
 
-## Step 3 — Filter: skip internal-only meetings
+## Step 4 — Filter: skip internal-only meetings
 
-For each meeting, check `participants[]`. A meeting is **internal** if ALL participants share `internal_domain`. Skip internal meetings silently.
-
----
-
-## Step 4 — Filter: skip already-processed meetings
-
-For each remaining meeting:
-
-**Layer 1 — Check `agent_processed_meeting_ids`** (fast path):
-If `meeting.id` is present → skip silently.
-
-**Layer 2 — Search Slack** (catch meetings processed by individual skills or manual runs):
-If not in the list, search Slack for prior posts.
-
-Infer `ClientName` from the external participant's name or email domain.
-
-Call `slack_search_public_and_private` with: `"Call Breakdown" "[ClientName]"`
-Also try: `"ICP Qualification" "[ClientName]"`
-
-If either search returns a match referencing this client → write `meeting.id` to `agent_processed_meeting_ids` and skip.
+For each meeting, check `participants[]`. If ALL participants share `internal_domain` → skip silently.
 
 ---
 
-## Step 5 — Check meeting has enough data
+## Step 5 — Multi-layer deduplication per meeting
 
-Only process meetings with a non-empty `summary`. If `summary` is null or empty → skip silently and retry next cycle.
+For each remaining (external) meeting, run this dedup sequence. A meeting advances to the agent only if it passes all layers.
+
+### Layer 1 — Local tracking (fast, no network)
+
+```bash
+python3 -c "
+import json, os, sys
+meeting_id = sys.argv[1]
+path = os.path.expanduser('~/mnt/.read-ai-summary-config.json')
+with open(path) as f:
+    c = json.load(f)
+
+agent_done  = meeting_id in c.get('agent_processed_meeting_ids', [])
+summary_done = meeting_id in c.get('posted_meeting_ids', [])
+icp_done    = meeting_id in c.get('icp_posted_meeting_ids', [])
+mktg_done   = meeting_id in c.get('marketing_posted_meeting_ids', [])
+all_done    = summary_done and icp_done and mktg_done
+
+print(f'AGENT={agent_done}')
+print(f'SUMMARY={summary_done}')
+print(f'ICP={icp_done}')
+print(f'MARKETING={mktg_done}')
+print(f'ALL_DONE={all_done}')
+" '<MEETING_ID>'
+```
+
+**Decision table:**
+
+| Condition | Action |
+|-----------|--------|
+| `AGENT=True` | Skip meeting entirely — agent already ran all three |
+| `ALL_DONE=True` | All three individual analyses already posted (manual runs). Write to `agent_processed_meeting_ids` and skip |
+| `SUMMARY=True AND ICP=True AND MARKETING=True` | Same as above |
+| Any combination of partial completion | Pass to agent — agent will skip the already-done analyses and only run the missing ones |
+| All `False` | Genuinely new meeting — continue to Layer 2 |
+
+### Layer 2 — Slack search (catch posts made outside this plugin)
+
+Only run if the meeting was NOT found in any local tracking field (all False from Layer 1).
+
+Infer `ClientName` and `MeetingDate` (format: "Mon Apr 14") from meeting data.
+
+Run two searches:
+```
+slack_search_public_and_private: "Call Breakdown" "[ClientName]"
+slack_search_public_and_private: "ICP Qualification" "[ClientName]"
+```
+
+For each result: check if the message timestamp falls within ±24 hours of `meeting.start_time_ms`. A name match alone is not enough — it must be temporally plausible for this specific meeting.
+
+**If a match is found for ALL three analyses** → mark as fully processed: write to `agent_processed_meeting_ids` and skip.
+
+**If a match is found for SOME analyses** → write those meeting IDs to the relevant individual tracking fields, then pass to agent (agent will skip the already-posted ones).
+
+**If no matches** → pass to agent as genuinely new.
+
+### Layer 3 — Summary presence check
+
+Only process meetings with a non-empty `summary` field. If `summary` is null or empty → skip silently. Read AI hasn't finished processing yet; it will be retried on the next hourly run.
 
 ---
 
 ## Step 6 — Delegate to meeting-analyst agent
 
-For each valid new meeting, pass the meeting data to the `meeting-analyst` agent defined in `agents/meeting-analyst.md`.
+For each meeting that passed all dedup layers, pass to the `meeting-analyst` agent with:
+- `meeting_id`
+- All expanded meeting data (pass through — do not re-fetch)
+- The per-analysis completion flags from Layer 1 so the agent knows which analyses to skip
 
-Provide the agent with:
-- `meeting_id` — the meeting's `id` field
-- All expanded meeting data already fetched (pass through — do not re-fetch)
-
-The agent handles:
-1. Strategic Summary → post to Slack
-2. ICP Qualification (including web research) → post to Slack
-3. Marketing Feedback → post to Slack
-4. Updating all tracking fields in config
+The agent handles running whichever analyses are still pending and writes all tracking fields immediately after each successful post.
 
 ---
 
-## Step 7 — Exit
+## Step 7 — Release lock and exit
+
+Always release the lock at the end, regardless of outcome:
+
+```bash
+python3 -c "
+import os
+lock = os.path.expanduser('~/.hpl-meeting-analyst.lock')
+if os.path.exists(lock):
+    os.remove(lock)
+"
+```
 
 If no new meetings were found or processed → exit silently.
 
-If a meeting was processed → confirm briefly:
-"✅ Full analysis posted for *ProjectName — ClientName*: Summary, ICP, and Marketing Feedback."
+If meetings were processed → confirm briefly:
+"✅ Full analysis posted for *[N] meeting(s)*."
 
-If an error occurred → log briefly:
-"⚠️ Error processing *[title]*: [short message]. Will retry next cycle."
+If an error occurred → log briefly and release lock:
+"⚠️ Error during auto-detect: [short message]. Lock released."
