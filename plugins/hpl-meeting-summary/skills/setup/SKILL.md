@@ -3,7 +3,7 @@ name: setup
 description: >
   Use this skill when the user says "set up the meeting summary plugin", "first time setup",
   "configure the plugin for the first time", "initialize the plugin",
-  or when no config file exists at ~/mnt/.read-ai-summary-config.json and the user tries to
+  or when no config file exists at ~/mnt/.claude/.read-ai-summary-config.json and the user tries to
   run any analysis for the first time. Also trigger if the plugin says it is not working.
 metadata:
   version: "0.2.0"
@@ -105,7 +105,7 @@ After the four defaults, ask: "Any other tech categories to add? Format: 'Zapier
 
 ## Step 7 — Write config file
 
-Write the full config to `~/mnt/.read-ai-summary-config.json`:
+Write the full config to `~/mnt/.claude/.read-ai-summary-config.json`:
 
 ```bash
 python3 -c "
@@ -154,7 +154,7 @@ config = {
   'marketing_posted_meeting_ids': [],
   'agent_processed_meeting_ids': []
 }
-path = os.path.expanduser('~/mnt/.read-ai-summary-config.json')
+path = os.path.expanduser('~/mnt/.claude/.read-ai-summary-config.json')
 with open(path, 'w') as f:
     json.dump(config, f, indent=2)
 print('Config written.')

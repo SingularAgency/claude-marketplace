@@ -34,12 +34,12 @@ Read all three reference files before starting.
 
 ## Phase 0 — Load Config and Resolve Meeting
 
-Read `~/mnt/.read-ai-summary-config.json`:
+Read `~/mnt/.claude/.read-ai-summary-config.json`:
 
 ```bash
 python3 -c "
 import json, os
-with open(os.path.expanduser('~/mnt/.read-ai-summary-config.json')) as f:
+with open(os.path.expanduser('~/mnt/.claude/.read-ai-summary-config.json')) as f:
     print(json.dumps(json.load(f)))
 "
 ```
@@ -74,7 +74,7 @@ Before running anything, check whether this meeting has already been fully proce
 python3 -c "
 import json, os, sys
 mid = sys.argv[1]
-with open(os.path.expanduser('~/mnt/.read-ai-summary-config.json')) as f:
+with open(os.path.expanduser('~/mnt/.claude/.read-ai-summary-config.json')) as f:
     c = json.load(f)
 print('AGENT='   + str(mid in c.get('agent_processed_meeting_ids', [])))
 print('SUMMARY=' + str(mid in c.get('posted_meeting_ids', [])))
@@ -119,7 +119,7 @@ Re-read config and verify `meeting_id` is NOT in `posted_meeting_ids`. (Config m
 python3 -c "
 import json, os, sys
 mid = sys.argv[1]
-with open(os.path.expanduser('~/mnt/.read-ai-summary-config.json')) as f:
+with open(os.path.expanduser('~/mnt/.claude/.read-ai-summary-config.json')) as f:
     c = json.load(f)
 print('ALREADY=' + str(mid in c.get('posted_meeting_ids', [])))
 " '<MEETING_ID>'
@@ -184,7 +184,7 @@ Thread reply:
 ```bash
 python3 -c "
 import json, os
-path = os.path.expanduser('~/mnt/.read-ai-summary-config.json')
+path = os.path.expanduser('~/mnt/.claude/.read-ai-summary-config.json')
 with open(path) as f:
     c = json.load(f)
 lst = c.setdefault('posted_meeting_ids', [])
@@ -209,7 +209,7 @@ with open(path, 'w') as f:
 python3 -c "
 import json, os, sys
 mid = sys.argv[1]
-with open(os.path.expanduser('~/mnt/.read-ai-summary-config.json')) as f:
+with open(os.path.expanduser('~/mnt/.claude/.read-ai-summary-config.json')) as f:
     c = json.load(f)
 print('ALREADY=' + str(mid in c.get('icp_posted_meeting_ids', [])))
 " '<MEETING_ID>'
@@ -255,7 +255,7 @@ Thread reply:
 ```bash
 python3 -c "
 import json, os
-path = os.path.expanduser('~/mnt/.read-ai-summary-config.json')
+path = os.path.expanduser('~/mnt/.claude/.read-ai-summary-config.json')
 with open(path) as f:
     c = json.load(f)
 lst = c.setdefault('icp_posted_meeting_ids', [])
@@ -280,7 +280,7 @@ with open(path, 'w') as f:
 python3 -c "
 import json, os, sys
 mid = sys.argv[1]
-with open(os.path.expanduser('~/mnt/.read-ai-summary-config.json')) as f:
+with open(os.path.expanduser('~/mnt/.claude/.read-ai-summary-config.json')) as f:
     c = json.load(f)
 print('ALREADY=' + str(mid in c.get('marketing_posted_meeting_ids', [])))
 " '<MEETING_ID>'
@@ -314,7 +314,7 @@ Thread replies (one per block):
 ```bash
 python3 -c "
 import json, os
-path = os.path.expanduser('~/mnt/.read-ai-summary-config.json')
+path = os.path.expanduser('~/mnt/.claude/.read-ai-summary-config.json')
 with open(path) as f:
     c = json.load(f)
 lst = c.setdefault('marketing_posted_meeting_ids', [])
@@ -336,7 +336,7 @@ Write `meeting_id` to `agent_processed_meeting_ids`. This is the master flag tha
 ```bash
 python3 -c "
 import json, os
-path = os.path.expanduser('~/mnt/.read-ai-summary-config.json')
+path = os.path.expanduser('~/mnt/.claude/.read-ai-summary-config.json')
 with open(path) as f:
     c = json.load(f)
 lst = c.setdefault('agent_processed_meeting_ids', [])
