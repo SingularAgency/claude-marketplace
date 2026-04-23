@@ -2,37 +2,51 @@
 name: configure
 description: >
   Use this skill when the user says "configure the meeting summary plugin", "set my default Slack channel",
-  "change where summaries are posted", "turn on auto-post", "turn off auto-post",
+  "change where summaries are posted", "change the ICP channel", "change where ICP is posted",
+  "change the marketing feedback channel", "turn on auto-post", "turn off auto-post",
   "add someone to tag in summaries", "remove a tag", "show my meeting summary settings",
   "update meeting summary preferences", "set my company domain", "change internal domain",
   "who handles airtable leads", "change accountable for [technology]", "assign [name] to [tech type]",
   "update role assignments", "who is responsible for flutterflow", "add a new technology category",
-  or any phrase related to managing how, where, and to whom Read AI meeting summaries are posted.
+  "reset posted meetings", or any phrase related to managing how, where, and to whom
+  meeting analyses are posted.
 metadata:
-  version: "0.1.0"
+  version: "0.2.0"
   author: "Singular Agency"
 ---
 
-# Configure Meeting Summary Plugin
+# Configure HPL Meeting Summary Plugin
 
-Manage all preferences for how and where meeting summaries are posted. All settings are saved to `~/mnt/.read-ai-summary-config.json`.
+Manage all preferences for how and where each analysis is posted. All settings are saved to `~/mnt/.read-ai-summary-config.json`.
 
-## Config File Structure
+## Full Config Schema
 
 ```json
 {
-  "default_channel": "C0123456789",
-  "default_channel_name": "#hpl-general",
-  "auto_post": false,
+  "setup_complete": true,
+  "auto_post": true,
   "internal_domain": "singularagency.co",
+
+  "default_channel": "CXXXXXXXX",
+  "default_channel_name": "#test-map",
+
+  "summary_channel": "CXXXXXXXX",
+  "summary_channel_name": "#test-map",
+
+  "icp_channel": "CXXXXXXXX",
+  "icp_channel_name": "#test-map",
+
+  "marketing_channel": "CXXXXXXXX",
+  "marketing_channel_name": "#marketing-feedback",
+
   "mention_users": [],
-  "posted_meeting_ids": [],
+
   "role_assignments": {
     "airtable": {
       "label": "Airtable",
       "user_ids": ["U123"],
       "names": ["William Hernandez"],
-      "keywords": ["airtable", "no-code database"]
+      "keywords": ["airtable", "no-code database", "airtable automation"]
     },
     "flutterflow": {
       "label": "FlutterFlow",
@@ -53,7 +67,11 @@ Manage all preferences for how and where meeting summaries are posted. All setti
       "keywords": ["react", "node", "backend", "web app"]
     }
   },
-  "setup_complete": true
+
+  "posted_meeting_ids": [],
+  "icp_posted_meeting_ids": [],
+  "marketing_posted_meeting_ids": [],
+  "agent_processed_meeting_ids": []
 }
 ```
 
@@ -61,14 +79,16 @@ Manage all preferences for how and where meeting summaries are posted. All setti
 
 ## Step 1 — Read current config
 
-Read `~/mnt/.read-ai-summary-config.json` using Bash. Display a clean summary of current settings:
+Read `~/mnt/.read-ai-summary-config.json` using Bash. Display a clean summary:
 
 ```
 📋 Current Configuration:
 
-Channel: #hpl-general
-Auto-post: disabled
-Internal domain: @singularagency.co
+📋 Summary       → #test-map
+🎯 ICP           → #test-map
+📊 Marketing     → #marketing-feedback
+Auto-post        → enabled / disabled
+Internal domain  → @singularagency.co
 
 👤 Accountable by Technology:
 • Airtable → William Hernandez
@@ -77,8 +97,8 @@ Internal domain: @singularagency.co
 • FullStack → Charlie
 <any custom categories>
 
-Global tags (all summaries): <none or list of names>
-Posted meetings tracked: 12
+Global tags (all summaries): <none or list>
+Meetings tracked: Summary: N | ICP: N | Marketing: N | Agent: N
 ```
 
 ---
@@ -89,60 +109,69 @@ Handle each type of change:
 
 ---
 
-### A. Set default Slack channel
-Use `slack_search_channels` to find the channel the user named. Show up to 5 matches with name and description. Confirm the right one. Save `default_channel` (ID) and `default_channel_name`.
+### A. Set a channel (summary / ICP / marketing / default)
+
+When the user says things like:
+- "Change the summary channel to #sales"
+- "Move ICP to #qualification"
+- "Post marketing feedback to #product"
+- "Change my default channel"
+
+Use `slack_search_channels` to find the channel the user named. Show up to 5 matches. Confirm the right one.
+
+Save the appropriate key(s):
+- Summary → `summary_channel` + `summary_channel_name` (also update `default_channel` if it was the same)
+- ICP → `icp_channel` + `icp_channel_name`
+- Marketing → `marketing_channel` + `marketing_channel_name`
+- Default → `default_channel` + `default_channel_name`
+
+If the user sets a channel without specifying which analysis, ask: "Should this apply to all three analyses, or just one? (Summary / ICP / Marketing / All)"
 
 ---
 
 ### B. Toggle auto-post
-- "Auto-post on" / "post automatically" → `auto_post: true`
-- "Auto-post off" / "always ask" → `auto_post: false`
 
-Explain:
-- **ON**: summaries post immediately when a new client meeting is detected, no confirmation.
-- **OFF**: you get a preview and must confirm before posting.
+- "Auto-post on" → `auto_post: true` — analyses post immediately when a meeting is detected
+- "Auto-post off" → `auto_post: false` — always shows a preview and waits for confirmation
 
 ---
 
 ### C. Set internal domain
-Save `internal_domain`. Meetings where ALL participants share this domain are skipped as internal. Default: `singularagency.co`.
+
+Save `internal_domain`. Meetings where ALL participants share this domain are skipped as internal.
 
 ---
 
 ### D. Update accountable for a technology category
 
-When the user says things like:
-- "Who handles Airtable leads?" → show current assignment, offer to change
+- "Who handles Airtable?" → show current assignment
 - "Assign William to Airtable" → update `role_assignments.airtable`
-- "Change FlutterFlow accountable to Fabian" → update `role_assignments.flutterflow`
-- "Add Jorge to AI Custom" → append to `role_assignments.ai_custom.user_ids`
-- "Remove Amilkar from FullStack" → remove from `role_assignments.fullstack.user_ids`
+- "Add Fabian to FlutterFlow" → append to that category's arrays
+- "Remove Amilkar from FullStack" → remove from that category's arrays
 
 Steps:
-1. Identify the technology category (airtable, flutterflow, ai_custom, fullstack, or a custom key)
-2. Use `slack_search_users` to look up the person by name/handle if not already a known Slack ID
-3. Confirm the match (name + email)
-4. Update `user_ids` and `names` arrays in that category
-5. Confirm: "Done — [TechType] leads will now be tagged to [Name(s)]"
+1. Identify the tech category (airtable / flutterflow / ai_custom / fullstack / custom key)
+2. Use `slack_search_users` to look up the person if not a known Slack ID
+3. Confirm match (name + email)
+4. Update `user_ids` and `names` arrays
+5. Confirm: "Done — [TechType] leads will now tag [Name(s)]."
 
 ---
 
 ### E. Add a new technology category
 
-When the user says "add a new technology" or "we also do Zapier / WordPress / etc.":
-
 Ask:
-1. "What's the technology name?" (e.g., "Zapier")
-2. "Who's accountable for it?" (search Slack for the person)
-3. "What keywords should I look for in meetings to detect this type?" (suggest defaults, let user add/remove)
+1. Technology name (e.g., "Zapier")
+2. Who's accountable — search Slack
+3. Detection keywords — suggest defaults, let user edit
 
-Create a new entry in `role_assignments` under a kebab-case key (e.g., `zapier`):
+Create a new entry under a kebab-case key (e.g., `zapier`):
 ```json
 "zapier": {
   "label": "Zapier",
   "user_ids": ["U..."],
   "names": ["..."],
-  "keywords": ["zapier", "zap", "zapier automation", "zapier workflow"]
+  "keywords": ["zapier", "zap", "zapier automation"]
 }
 ```
 
@@ -150,58 +179,60 @@ Create a new entry in `role_assignments` under a kebab-case key (e.g., `zapier`)
 
 ### F. Add custom keywords to an existing category
 
-When the user says "also detect [keyword] as Airtable" or "add [term] to FlutterFlow detection":
-
-Append the new keyword(s) to the relevant category's `keywords` array.
+Append to the relevant `keywords` array. Confirm what was added.
 
 ---
 
-### G. Add global mention users (all summaries)
+### G. Add / remove global mention users
 
-Use `slack_search_users` to find the users the user named. Add their Slack user IDs to `mention_users`. These appear in the headline message, not the thread.
-
----
-
-### H. Remove global mention users
-Remove the matching user ID from `mention_users`.
+`mention_users` — appear in the Summary headline for every meeting.
+Use `slack_search_users` to resolve names/handles. Add or remove from the array.
 
 ---
 
-### I. Clear posted meeting history
-If the user says "reset posted meetings" or "re-post all meetings":
-- Set `posted_meeting_ids: []`
-- Warn: "This will let the auto-detect re-post summaries for all recent meetings it finds. Are you sure?"
+### H. Reset posted meeting history
+
+If the user says "reset posted meetings" or "clear history":
+
+Ask which list(s) to clear:
+- "Summary history" → `posted_meeting_ids: []`
+- "ICP history" → `icp_posted_meeting_ids: []`
+- "Marketing history" → `marketing_posted_meeting_ids: []`
+- "Agent history" → `agent_processed_meeting_ids: []`
+- "All" → clear all four
+
+Warn: "This will let the auto-detect re-process recent meetings it already handled. Are you sure?"
 
 ---
 
-### J. Show all current settings
-Display the full config in a readable format without making changes (same as Step 1 output).
+### I. Show all current settings
+
+Display the full config in readable format (same as Step 1 output). No changes.
 
 ---
 
 ## Step 3 — Save updated config
 
-Write the complete updated config back to `~/mnt/.read-ai-summary-config.json` using Python (to safely preserve all existing fields):
+Always read the file first, apply changes, then write back — never overwrite the entire file:
 
 ```bash
 python3 -c "
 import json
-with open('$HOME/mnt/.read-ai-summary-config.json', 'r') as f:
+path = '$HOME/mnt/.read-ai-summary-config.json'
+with open(path, 'r') as f:
     config = json.load(f)
-# Apply changes here
-with open('$HOME/mnt/.read-ai-summary-config.json', 'w') as f:
+# Apply targeted changes here
+with open(path, 'w') as f:
     json.dump(config, f, indent=2)
 "
 ```
-
-Never overwrite the entire file — always read first and merge changes.
 
 ---
 
 ## Step 4 — Confirm
 
-Tell the user exactly what changed. Example responses:
-- "Done — Airtable leads will now be tagged to *William Hernandez* (<@U123>)."
-- "FlutterFlow now has two accountables: *Fabian* and *William*."
-- "Added 'zapier' as a new technology category assigned to *Jorge*."
-- "Keyword 'bubble.io' added to the FullStack detection list."
+Tell the user exactly what changed. Examples:
+- "Done — ICP analyses will now post to *#qualification*."
+- "Airtable leads will be tagged to *William Hernandez* (<@U123>)."
+- "Auto-post is now *enabled*."
+- "Cleared ICP and Agent history — those meetings will be re-analysed on the next hourly run."
