@@ -16,33 +16,26 @@ Guided first-time setup. Verifies both MCP connections, configures channel routi
 
 ---
 
-## Step 0 — Verify persistent folder is connected
+## Step 0 — Create and connect the persistent config folder
 
-Before anything else, check whether `~/mnt/Claude/` is accessible:
+Before anything else, create the folder (if it doesn't exist) and request access to it:
+
+**0a.** Create `~/Documents/Claude` on disk:
 
 ```bash
 python3 -c "
 import os
-path = os.path.expanduser('~/mnt/Claude')
-if os.path.isdir(path):
-    print('FOLDER_OK')
-else:
-    print('FOLDER_MISSING')
+folder = os.path.expanduser('~/Documents/Claude')
+os.makedirs(folder, exist_ok=True)
+print('CREATED:', folder)
 "
 ```
 
-- **FOLDER_OK** → Continue to Step 1.
-- **FOLDER_MISSING** → Tell the user:
+**0b.** Call `request_cowork_directory` with path `~/Documents/Claude`.
 
-  > "To save your settings across sessions, I need access to a folder called **Claude** in your Documents.
-  >
-  > **On Mac:** Open Finder → Documents → create a folder named `Claude` if it doesn't exist, then in Cowork click the folder icon (top left) and select that folder.
-  >
-  > **On Windows:** It's usually at `Documents\Claude` — Cowork may have already connected it. If not, click the folder icon and select it.
-  >
-  > Once connected, come back and run setup again."
-
-  → Stop. Do not continue until the folder is connected.
+This shows the user a one-click approval dialog. Wait for the result:
+- **Folder connected** → `~/mnt/Claude/` is now available. Continue to Step 1.
+- **Error or denied** → Tell the user: "I need access to your Documents/Claude folder to save settings. Please approve the folder access dialog and try again." → Stop.
 
 ---
 
