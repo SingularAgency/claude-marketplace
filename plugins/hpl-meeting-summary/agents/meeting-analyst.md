@@ -127,19 +127,50 @@ print('ALREADY=' + str(mid in c.get('posted_meeting_ids', [])))
 
 If `ALREADY=True` → skip this analysis, continue to Phase 3.
 
-### 2b — Generate
+### 2b — Detect technology type and accountable team member
 
-Follow `skills/generate-summary/references/output-format.md` exactly.
+Follow the full detection logic in `skills/generate-summary/references/tech-detection.md`.
 
-Detect tech type from `role_assignments` (search title, topics, summary, chapter_summaries — case-insensitive). Collect matching `user_ids`.
+Search these meeting fields for keyword matches (case-insensitive) against each category's `keywords` array in `role_assignments`:
+- `title` (highest signal)
+- `topics[]`
+- `summary`
+- `chapter_summaries[].title` and `chapter_summaries[].description`
 
-Write the full strategic brief — every section required (Who They Are, Context, Pain Points ×3+, What Was Discussed, Key Questions, Options/Directions, Strategic Read, Action Items, Next Steps, report link).
+**If multiple categories match**: use the one with the most keyword hits. On a tie, prefer: airtable → flutterflow → ai_custom → fullstack → custom categories.
 
-### 2c — Post to Slack
+**If multiple categories match with clear hits on both** (e.g. meeting covers both Airtable and FlutterFlow): tag ALL matching accountables together on one line.
+
+**If no category matches**: no tech tag. Fall back to `mention_users` only (global tags).
+
+Collect the resolved `<@USER_ID>` strings — these go in the **thread**, not the headline.
+
+### 2c — Generate the strategic brief
+
+Follow `skills/generate-summary/references/output-format.md` exactly. Every section is required:
+- Who They Are
+- Context & Current State
+- Pain Points (numbered, min 3, with direct quotes and operational impact)
+- What Was Discussed (one full sentence per chapter)
+- Key Questions Raised
+- Options / Directions Considered (if applicable)
+- Strategic Read
+- 🔴 Action Items (specific, named assignees)
+- 🔴 Next Steps / Timeline (specific dates)
+- 🔗 Full report: [report_url]
+
+Prepend the accountable tag line at the very top of the thread body (only if a match was found):
+
+
+If no tech match, omit the tag line entirely and start directly with the brief.
+
+### 2d — Post to Slack
 
 Parent message:
 - `channel_id`: `ch_summary`
-- `text`: `ProjectName — ClientName` (prepend `mention_users` if set)
+- `text`: `ProjectName — ClientName`
+- If `mention_users` is non-empty, prepend them to the headline: `<@U1> <@U2> | ProjectName — ClientName`
+- Note: `mention_users` (global tags) go in the **headline**. Tech accountable tags go in the **thread**.
 
 Capture `ts_summary`.
 
@@ -148,7 +179,7 @@ Thread reply:
 - `thread_ts`: `ts_summary`
 - `text`: accountable tag line (if any) + full brief
 
-### 2d — Write tracking immediately
+### 2e — Write tracking immediately
 
 ```bash
 python3 -c "
