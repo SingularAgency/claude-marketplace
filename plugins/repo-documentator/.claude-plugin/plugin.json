@@ -1,0 +1,23 @@
+{
+  "name": "repo-documentator",
+  "version": "0.4.0",
+  "description": "Autonomously documents a GitHub repository and opens a pull request with non-technical, PM-friendly business docs. One file per module with flow diagrams, plain-English capabilities, and Mermaid user-journey maps per actor. Cross-module workflows ship with two diagrams (business view + technical sequence). After the initial run, document-refresh provides cursor-based incremental updates.",
+  "author": {
+    "name": "Singular Innovation",
+    "url": "https://singular-innovation.com"
+  },
+  "keywords": [
+    "documentation",
+    "business",
+    "workflows",
+    "domain-driven",
+    "handoff",
+    "business-docs",
+    "ddd",
+    "github",
+    "prs",
+    "mermaid"
+  ],
+  "repository": "https://github.com/SingularAgency/claude-marketplace",
+  "license": "MIT"
+}
