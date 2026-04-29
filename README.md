@@ -64,6 +64,30 @@ Pulls live data from Google Calendar, Gmail, Slack, and Airtable, analyzes it th
 
 ---
 
+### `repo-documentator`
+> Developer tools · v0.4.0
+
+Autonomously documents a GitHub repository and opens a pull request with **non-technical, PM-friendly** business docs. One file per module with a flow diagram, plain-English capabilities, business rules with origin, and a Mermaid **user-journey map per actor**. Cross-module workflows ship with two diagrams: a business view (for stakeholders) and a technical sequence (for engineers). After the initial run, `document-refresh` provides **cursor-based incremental updates** — only modules whose paths changed get re-derived.
+
+| Capability | Type | What it does |
+|---|---|---|
+| `document-init` | Skill | Clones a repo (or accepts a local path), detects modules, maps connections, writes the full `docs/` tree, and opens a PR |
+| `document-refresh` | Skill | Reads the cursor in `docs/.business-docs-state.json`, processes only what changed since, advances the cursor, and opens a PR |
+| `document-module` | Skill | Regenerates a single module's doc from the code |
+| `document-workflow` | Skill | Traces a workflow from an entry point and writes a 2-diagram workflow file |
+| `document-connections` | Skill | Regenerates the inter-module connection map |
+| `module-detector` | Agent | Proposes a split into bounded contexts (DDD) |
+| `connection-analyst` | Agent | Maps explicit + subtle inter-module connections (gold for handoffs) |
+
+**Requirements:** A GitHub PAT with `repo` scope (or `gh` CLI authenticated) so the plugin can clone and open PRs.
+
+**Install:**
+```shell
+/plugin install repo-documentator@singular-agency-marketplace
+```
+
+---
+
 ## Auto-enable for the team
 
 Add this to your project's `.claude/settings.json` to automatically register the marketplace and enable plugins for all team members:
